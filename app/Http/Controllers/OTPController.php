@@ -31,11 +31,12 @@ class OTPController extends Controller
 			$otp = OTP::where('phone_number', $phone_number)->first();
 			if ($otp) {
 				$createdTime = new Carbon($otp->updated_at);
-				if (Carbon::now()->diffInMinutes($createdTime) <= 10) {
+				$diffInSeconds = abs(Carbon::now()->diffInSeconds($createdTime));
+				if ($diffInSeconds < 30) {
 					return response()->json([
 						'success' => false,
-						'message' => 'Mã OTP cũ vẫn còn hiệu lực'
-					], 400);
+						'message' => 'Rate limit exceeded. Please wait ' . (30 - $diffInSeconds) . ' seconds before requesting a new OTP.'
+					], 429);
 				}
 			}
 
@@ -86,24 +87,17 @@ class OTPController extends Controller
 	 */
 	public function verify(Request $request): \Illuminate\Http\JsonResponse
 	{
-		Log::
-			debug("here -1");
-
 		// Validate input
 		$validatedData = $request->validate([
 			'phone_number' => 'required|string|min:9|max:10',
 			'code' => 'required|numeric|digits:4',
 		]);
 
-		Log::
-			debug("here 0");
-
 		$phone_number = $validatedData['phone_number'];
 		$code = $validatedData['code'];
 
 		try {
 			// Find OTP record
-			Log::debug("Here");
 			$otp = OTP::where('phone_number', $phone_number)->first();
 
 			if (!$otp) {
@@ -122,7 +116,6 @@ class OTPController extends Controller
 				], 400);
 			}
 
-			Log::debug("Here 2");
 
 			// Verify OTP
 			if ((string) $otp->code !== (string) $code) {
@@ -133,18 +126,9 @@ class OTPController extends Controller
 			}
 
 			// Mark user's phone as verified if they exist
-			$user = User::where('phone_number', $phone_number)->first();
-			if ($user) {
-				$user->phone_verified_at = now();
-				$user->save();
-			}
+			$otp->verified_at = Carbon::now();
 
-			Log::debug("Here 4");
-
-			// Delete OTP after successful verification
-			$otp->delete();
-
-			Log::debug("here 4");
+			$otp->save();
 
 			return response()->json([
 				'success' => true,

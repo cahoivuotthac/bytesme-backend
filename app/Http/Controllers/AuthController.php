@@ -6,6 +6,7 @@ use DB;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Cart;
+use App\Models\OTP;
 use Illuminate\Support\Facades\Cache;
 use Exception;
 use Auth;
@@ -209,6 +210,15 @@ class AuthController extends Controller
 			], 400);
 		}
 
+		// Verify if phone number is verified via OTP
+		$otp = OTP::where('phone_number', $phone_number)->first();
+		if (!$otp || !$otp->verified_at) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Số điện thoại chưa được xác thực'
+			], 400);
+		}
+
 		// Create user
 		$user = null;
 		$emailPrefix = explode('@', $email)[0];
@@ -231,6 +241,7 @@ class AuthController extends Controller
 				'role_type' => 0,
 				'cart_id' => $cart->cart_id,
 			]);
+			$otp->delete();
 			DB::commit();
 		} catch (Exception $e) {
 			DB::rollback();
