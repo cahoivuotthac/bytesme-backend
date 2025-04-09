@@ -13,6 +13,7 @@ return new class extends Migration {
 		Schema::create('otp', function (Blueprint $table) {
 			$table->id('phone_number');
 			$table->string('code');
+			$table->timestamp('verified_at')->nullable();
 			$table->timestamps();  // created_at and updated_at fields
 		});
 	}

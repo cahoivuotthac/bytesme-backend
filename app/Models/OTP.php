@@ -13,9 +13,8 @@ use Illuminate\Database\Eloquent\Model;
  * Class Cart
  *
  * @property int $phone_number
+ * @property string $verified_at
  * @property int|null $code
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
  *
  * @property Collection|User $user
  *
@@ -27,11 +26,12 @@ class OTP extends Model
 	protected $primaryKey = 'phone_number';
 
 	protected $casts = [
+		'verified_at' => 'string',
 	];
 
 	protected $fillable = [ //mass-assigned
 		'phone_number',
-		'code'
-
+		'code',
+		'verified_at',
 	];
 }
