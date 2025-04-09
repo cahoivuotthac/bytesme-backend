@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\OTPController;
 
 Route::get('/', function () {
 	return view('welcome');
@@ -25,3 +26,10 @@ Route::post('/auth/register', [AuthController::class, 'handleRegister'])->name('
 // OAuth2 social login
 Route::post('/auth/login/{social}', [AuthController::class, 'showConsentScreen']);
 Route::get('/auth/login/{social}/callback', [AuthController::class, 'handleSocialCallback']);
+
+Route::get('/get-csrf-token', function () {
+	return response()->json(['token' => csrf_token()]);
+});
+
+Route::post('/auth/otp/gen', [OTPController::class, 'generate']);
+Route::post('/auth/otp/verify', [OTPController::class, 'verify']);
