@@ -15,15 +15,8 @@ class CredentialsValidatorService
 		$this->dbConnService = $dBConnService;
 	}
 
-	public function validateAndReturnEmail(array $request_data, bool $is_login = false): mixed
+	public function validateAndReturnEmail(string $email, bool $is_login = false): mixed
 	{
-		// check empty email
-		if (empty($request_data["email"])) {
-			throw new Exception("email is required");
-		}
-
-		$email = $request_data["email"];
-
 		// email length check
 		if (strlen($email) > 255) {
 			throw new Exception("email is too long");
@@ -59,15 +52,8 @@ class CredentialsValidatorService
 		return $email;
 	}
 
-	public function validateAndReturnName(array $request_data)
+	public function validateAndReturnName(string $name)
 	{
-		// check empty name
-		if (empty($request_data["name"])) {
-			throw new Exception("user's name is required");
-		}
-
-		$name = $request_data["name"];
-
 		if (strlen($name) > 255) {
 			throw new Exception("name is too long");
 		}
@@ -76,15 +62,8 @@ class CredentialsValidatorService
 		return $name;
 	}
 
-	public function validateAndReturnPassword(array $request_data)
+	public function validateAndReturnPassword(string $password)
 	{
-		// check empty password
-		if (empty($request_data["password"])) {
-			throw new Exception("password is required");
-		}
-
-		$password = $request_data["password"];
-
 		// password length check
 		if (strlen($password) < 8) {
 			throw new Exception(message: "Mật khẩu phải chứa ít nhất 8 ký tự");

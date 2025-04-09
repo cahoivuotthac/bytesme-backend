@@ -86,7 +86,10 @@ class AuthController extends Controller
 				'error' => $e->getMessage(),
 				'request_data' => $request->all(), // Optional: log request data
 			]);
-			return redirect()->back()->withErrors($e->getMessage());
+			return response()->json([
+				'success' => false,
+				'message' => $e->getMessage()
+			], 400);
 		}
 
 		// check if user exists
@@ -100,7 +103,10 @@ class AuthController extends Controller
 			]);
 			if (!$is_correct_password) {
 				// $this->sendErrorJSON("invalid credentials", 400);
-				return redirect()->back()->withErrors("Thông tin đăng nhập sai");
+				return response()->json([
+					'success' => false,
+					'message' => 'Thông tin đăng nhập sai'
+				], 401);
 			}
 		} else {
 			// retrieve from db
@@ -115,13 +121,19 @@ class AuthController extends Controller
 					Log::error("User not found in database", [
 						'email' => $email,
 					]);
-					return redirect()->back()->withErrors(provider: "Thông tin đăng nhập sai");
+					return response()->json([
+						'success' => false,
+						'message' => 'Thông tin đăng nhập sai'
+					], 401);
 				}
 				$row = $result->fetch_assoc();
 				$hashed_password = $row['password'];
 				$is_correct_password = password_verify($password, $hashed_password);
 				if (!$is_correct_password) {
-					return redirect()->back()->withErrors("Thông tin đăng nhập sai");
+					return response()->json([
+						'success' => false,
+						'message' => 'Thông tin đăng nhập sai'
+					], 401);
 				}
 
 				// fill user object
@@ -135,7 +147,15 @@ class AuthController extends Controller
 				if (Auth::check()) {
 					Log::debug('Login successful for user: ', ['user_id' => $user->user_id]);
 					$request->session()->regenerate();
-					return redirect()->intended('/');
+					return response()->json([
+						'success' => true,
+						'message' => 'Đăng nhập thành công',
+						'user' => [
+							'id' => $user->user_id,
+							'name' => $user->full_name,
+							'email' => $user->email
+						]
+					]);
 				} else {
 					Log::debug('Login failed for user: ', ['user_id' => $user->user_id]);
 					throw new Exception();
@@ -145,7 +165,10 @@ class AuthController extends Controller
 					'error' => $e->getMessage(),
 					'request_data' => $request->all(), // Optional: log request data
 				]);
-				return redirect()->back()->withErrors("Có lỗi xảy ra khi đăng nhập");
+				return response()->json([
+					'success' => false,
+					'message' => 'Có lỗi xảy ra khi đăng nhập'
+				], 500);
 			} finally {
 				$pstm->close();
 			}
@@ -161,30 +184,34 @@ class AuthController extends Controller
 	// Handle registration
 	public function handleRegister(Request $request): mixed
 	{
-		$request_data = $_POST;
+		$request_data = $request->all();
+		Log::debug("Request data", [
+			'request_data' => $request_data,
+		]);
+		Log::info("We made it");
 
-		if (!is_array($request_data)) {
-			$request_data = json_decode(json: $request_data);
-		}
-
-		$email = "";
-		$password = "";
-		$name = $request_data['name'];
+		$email = $request->input('email');
+		$password = $request->input('password');
+		$name = $request->input('name');
+		$phone_number = $request->input('phone_number');
 
 		try {
-			$email = $this->credentialsValidatorService->validateAndReturnEmail($request_data, true);
-			$password = $this->credentialsValidatorService->validateAndReturnPassword($request_data);
+			$email = $this->credentialsValidatorService->validateAndReturnEmail($email, true);
+			$password = $this->credentialsValidatorService->validateAndReturnPassword($password);
 		} catch (Exception $e) {
 			Log::error("An error occurred in func. handleRegister()", [
 				'error' => $e->getMessage(),
 				'request_data' => $request->all(), // Optional: log request data
 			]);
-			return redirect()->back()->withErrors($e->getMessage());
+			return response()->json([
+				'success' => false,
+				'message' => $e->getMessage()
+			], 400);
 		}
 
 		// Create user
 		$user = null;
-		$emailPrefix = explode($email, string: '@')[0];
+		$emailPrefix = explode('@', $email)[0];
 		$randomName = null;
 		if (strlen(string: $emailPrefix) > 50) {
 			$randomName = AuthUtils::random_string(6);
@@ -197,6 +224,7 @@ class AuthController extends Controller
 				'items_count' => 0,
 			]);
 			$user = User::create(attributes: [
+				'phone_number' => $phone_number,
 				'name' => $name,
 				'email' => $email,
 				'password' => $password,
@@ -207,25 +235,31 @@ class AuthController extends Controller
 		} catch (Exception $e) {
 			DB::rollback();
 			if (strpos($e->getMessage(), "1062 Duplicate") !== false) {
-				return redirect()->back()->withErrors("Email đã được đăng ký");
+				return response()->json([
+					'success' => false,
+					'message' => 'Email đã được đăng ký'
+				], 400);
 			}
 			Log::error("An error occurred in func. handleRegister()", [
 				'error' => $e->getMessage(),
 				'request_data' => $request->all(), // Optional: log request data
 			]);
-			return redirect()->back()->withErrors("Có lỗi xảy ra khi đăng ký");
+			return response()->json([
+				'success' => false,
+				'message' => 'Có lỗi xảy ra khi đăng ký'
+			], 500);
 		}
 		Auth::login($user);
 
-		// store new user in cache for 30 minutes
-		// Cache::put(
-		// 	$user->email,
-		// 	$user,
-		// 	config('auth.register.userCache.TTLSecs', 60 * 30),
-		// );
-
-		// return redirect('/auth/login')->with('registerSuccess', "Đăng ký tài khoản thành công, vui lòng đăng nhập");
-		return redirect()->intended('/');
+		return response()->json([
+			'success' => true,
+			'message' => 'Đăng ký tài khoản thành công',
+			'user' => [
+				'id' => $user->id,
+				'name' => $user->name,
+				'email' => $user->email
+			]
+		]);
 	}
 
 	// Handle logout
@@ -236,7 +270,10 @@ class AuthController extends Controller
 		$request->session()->invalidate();
 		$request->session()->regenerateToken();
 
-		return redirect('/');
+		return response()->json([
+			'success' => true,
+			'message' => 'Đăng xuất thành công'
+		]);
 	}
 
 	public function showConsentScreen($social)
@@ -244,11 +281,18 @@ class AuthController extends Controller
 		switch ($social) {
 			case 'facebook':
 			case 'google':
-				return Socialite::driver($social)->redirect();
+				// For OAuth with React, we need to return the auth URL instead of redirecting
+				$authUrl = Socialite::driver($social)->stateless()->redirect()->getTargetUrl();
+				return response()->json([
+					'success' => true,
+					'auth_url' => $authUrl
+				]);
 			default:
-				return redirect()->back()->withErrors("Mạng xã hội này không được hỗ trợ");
+				return response()->json([
+					'success' => false,
+					'message' => 'Mạng xã hội này không được hỗ trợ'
+				], 400);
 		}
-
 	}
 
 	public function handleSocialCallback(Request $request, $social)
@@ -297,7 +341,15 @@ class AuthController extends Controller
 			if (Auth::check()) {
 				Log::debug('Login successful for user: ', ['user_id' => $user->user_id]);
 				$request->session()->regenerate();
-				return redirect()->intended('/');
+				return response()->json([
+					'success' => true,
+					'message' => 'Đăng nhập thành công',
+					'user' => [
+						'id' => $user->user_id,
+						'name' => $user->full_name,
+						'email' => $user->email
+					]
+				]);
 			} else {
 				Log::debug('Login failed for user: ', ['user_id' => $user->user_id]);
 				throw new Exception();
@@ -310,14 +362,20 @@ class AuthController extends Controller
 						'error' => $me->getMessage(),
 						'request_data' => $request->all(), // Optional: log request data
 					]);
-					return redirect('/auth/login')->withErrors("Email đã được đăng ký");
+					return response()->json([
+						'success' => false,
+						'message' => 'Email đã được đăng ký'
+					], 400);
 				default:
 					// Handle other MySQL error
 					Log::error('A MySQL error occurred in func. handleGoogleCallback()', [
 						'error' => $me->getMessage(),
 						'request_data' => $request->all(), // Optional: log request data
 					]);
-					return redirect('/auth/login')->withErrors("Có lỗi xảy ra khi đăng nhập");
+					return response()->json([
+						'success' => false,
+						'message' => 'Có lỗi xảy ra khi đăng nhập'
+					], 500);
 			}
 		} catch (Exception $e) {
 			Log::error('An error occurred in func. handleGoogleCallback()', [
@@ -325,7 +383,10 @@ class AuthController extends Controller
 				'request_data' => $request->all(), // Optional: log request data
 			]);
 
-			return redirect('/auth/login')->withErrors("Có lỗi xảy ra khi đăng nhập");
+			return response()->json([
+				'success' => false,
+				'message' => 'Có lỗi xảy ra khi đăng nhập'
+			], 500);
 		} finally {
 			$pstm->close();
 		}

@@ -12,15 +12,15 @@ Route::get('/', function () {
 /**
  * @notice Auth routes
  */
-Route::get('/auth', [AuthController::class, 'showLoginForm'])->name('auth.index');
-Route::get('/auth/login', [AuthController::class, 'showLoginForm'])->name('auth.showLoginForm');
+// Route::get('/auth', [AuthController::class, 'showLoginForm'])->name('auth.index');
+// Route::get('/auth/login', [AuthController::class, 'showLoginForm'])->name('auth.showLoginForm');
 Route::post('/auth/login', [AuthController::class, 'handleLogin'])->name('auth.login');
 
 // Logout
 Route::post('/auth/logout', [AuthController::class, 'handleLogout'])->name('auth.logout');
 
 // Registe
-Route::get('/auth/register', action: [AuthController::class, 'showRegistrationForm'])->name('auth.showRegisterForm');
+// Route::get('/auth/register', action: [AuthController::class, 'showRegistrationForm'])->name('auth.showRegisterForm');
 Route::post('/auth/register', [AuthController::class, 'handleRegister'])->name('auth.register');
 
 // OAuth2 social login
