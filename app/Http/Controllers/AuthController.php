@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use DB;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\PasswordResets;
 use App\Models\Cart;
 use App\Models\OTP;
 use Illuminate\Support\Facades\Cache;
@@ -64,24 +65,15 @@ class AuthController extends Controller
 		$this->credentialsValidatorService = $credentialsValidatorService;
 	}
 
-	public function showLoginForm()
+	// Handle login with Sanctum token
+	public function handleSignin(Request $request)
 	{
-		if (Auth::check()) {
-			return redirect()->intended('/');
-		}
-		return view('authentication.login');
-	}
-
-	// Handle login
-	public function handleLogin(Request $request)
-	{
-		$request_data = $_POST;
-		$email = "";
-		$password = "";
+		$email = $request->input('email');
+		$password = $request->input('password');
 
 		try {
-			$email = $this->credentialsValidatorService->validateAndReturnEmail($request_data, true);
-			$password = $this->credentialsValidatorService->validateAndReturnPassword($request_data);
+			$email = $this->credentialsValidatorService->validateAndReturnEmail($email, true);
+			$password = $this->credentialsValidatorService->validateAndReturnPassword($password);
 		} catch (Exception $e) {
 			Log::error("An error occurred in func. handleLogin()", [
 				'error' => $e->getMessage(),
@@ -93,108 +85,54 @@ class AuthController extends Controller
 			], 400);
 		}
 
-		// check if user exists
-		// check in cache first
-		$user = Cache::get($email);
-		if ($user) {
-			// check password
-			$is_correct_password = password_verify($password, $user->password);
-			Log::info("User found in cache", [
-				'user' => $user,
-			]);
-			if (!$is_correct_password) {
-				// $this->sendErrorJSON("invalid credentials", 400);
+		try {
+			// Find user by email
+			$user = User::where('email', $email)->first();
+
+			if (!$user || !password_verify($password, $user->password)) {
 				return response()->json([
 					'success' => false,
 					'message' => 'Thông tin đăng nhập sai'
 				], 401);
 			}
-		} else {
-			// retrieve from db
-			try {
-				$conn = $this->dbConnService->getDBConn();
-				$sql = "select * from users where email = ?";
-				$pstm = $conn->prepare($sql);
-				$pstm->bind_param("s", $email);
-				$pstm->execute();
-				$result = $pstm->get_result();
-				if ($result->num_rows == 0) {
-					Log::error("User not found in database", [
-						'email' => $email,
-					]);
-					return response()->json([
-						'success' => false,
-						'message' => 'Thông tin đăng nhập sai'
-					], 401);
-				}
-				$row = $result->fetch_assoc();
-				$hashed_password = $row['password'];
-				$is_correct_password = password_verify($password, $hashed_password);
-				if (!$is_correct_password) {
-					return response()->json([
-						'success' => false,
-						'message' => 'Thông tin đăng nhập sai'
-					], 401);
-				}
 
-				// fill user object
-				$user = new User();
-				$user->user_id = $row['user_id'];
-				$user->full_name = $row['full_name'];
-				$user->email = $row['email'];
-				$user->password = $row['password'];
-				Auth::login($user);
+			// Create token with device name
+			$deviceName = $request->input('device_name', 'mobile');
+			$token = $user->createToken($deviceName)->plainTextToken;
 
-				if (Auth::check()) {
-					Log::debug('Login successful for user: ', ['user_id' => $user->user_id]);
-					$request->session()->regenerate();
-					return response()->json([
-						'success' => true,
-						'message' => 'Đăng nhập thành công',
-						'user' => [
-							'id' => $user->user_id,
-							'name' => $user->full_name,
-							'email' => $user->email
-						]
-					]);
-				} else {
-					Log::debug('Login failed for user: ', ['user_id' => $user->user_id]);
-					throw new Exception();
-				}
-			} catch (Exception $e) {
-				Log::error("An error occurred in func. handleLogin()", [
-					'error' => $e->getMessage(),
-					'request_data' => $request->all(), // Optional: log request data
-				]);
-				return response()->json([
-					'success' => false,
-					'message' => 'Có lỗi xảy ra khi đăng nhập'
-				], 500);
-			} finally {
-				$pstm->close();
-			}
+			return response()->json([
+				'success' => true,
+				'message' => 'Đăng nhập thành công',
+				'user' => $user,
+				'token' => $token
+			]);
+
+		} catch (Exception $e) {
+			Log::error("An error occurred in func. handleLogin()", [
+				'error' => $e->getMessage(),
+				'request_data' => $request->all(),
+			]);
+			return response()->json([
+				'success' => false,
+				'message' => 'Có lỗi xảy ra khi đăng nhập'
+			], 500);
 		}
 	}
 
-	// Show registration form
-	public function showRegistrationForm()
+	// Handle registration with token
+	public function handleSignup(Request $request): mixed
 	{
-		return view('authentication.register');
-	}
-
-	// Handle registration
-	public function handleRegister(Request $request): mixed
-	{
-		$request_data = $request->all();
-		Log::debug("Request data", [
-			'request_data' => $request_data,
-		]);
-		Log::info("We made it");
-
 		$email = $request->input('email');
 		$password = $request->input('password');
-		$name = $request->input('name');
 		$phone_number = $request->input('phone_number');
+		$name = null;
+
+		if (!$phone_number) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Số điện thoại là bắt buộc'
+			], 400);
+		}
 
 		try {
 			$email = $this->credentialsValidatorService->validateAndReturnEmail($email, true);
@@ -210,6 +148,17 @@ class AuthController extends Controller
 			], 400);
 		}
 
+		// Check if user with this email already exists
+		$existingUser = User::where('email', $email)
+			->orWhere('phone_number', $phone_number)
+			->first();
+		if ($existingUser) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Email hoặc số điện thoại đã được đăng ký'
+			], 409);
+		}
+
 		// Verify if phone number is verified via OTP
 		$otp = OTP::where('phone_number', $phone_number)->first();
 		if (!$otp || !$otp->verified_at) {
@@ -221,13 +170,6 @@ class AuthController extends Controller
 
 		// Create user
 		$user = null;
-		$emailPrefix = explode('@', $email)[0];
-		$randomName = null;
-		if (strlen(string: $emailPrefix) > 50) {
-			$randomName = AuthUtils::random_string(6);
-		} else {
-			$randomName = AuthUtils::random_name($emailPrefix);
-		}
 		try {
 			DB::beginTransaction();
 			$cart = Cart::create(attributes: [
@@ -235,7 +177,7 @@ class AuthController extends Controller
 			]);
 			$user = User::create(attributes: [
 				'phone_number' => $phone_number,
-				'name' => $name,
+				'name' => !empty($name) ? $name : explode('@', $email)[0],
 				'email' => $email,
 				'password' => $password,
 				'role_type' => 0,
@@ -243,6 +185,11 @@ class AuthController extends Controller
 			]);
 			$otp->delete();
 			DB::commit();
+
+			// Generate token for new user
+			$deviceName = $request->input('device_name', 'mobile');
+			$token = $user->createToken($deviceName)->plainTextToken;
+
 		} catch (Exception $e) {
 			DB::rollback();
 			if (strpos($e->getMessage(), "1062 Duplicate") !== false) {
@@ -260,31 +207,39 @@ class AuthController extends Controller
 				'message' => 'Có lỗi xảy ra khi đăng ký'
 			], 500);
 		}
-		Auth::login($user);
 
 		return response()->json([
 			'success' => true,
 			'message' => 'Đăng ký tài khoản thành công',
-			'user' => [
-				'id' => $user->id,
-				'name' => $user->name,
-				'email' => $user->email
-			]
+			'user' => $user,
+			'token' => $token
 		]);
 	}
 
-	// Handle logout
+	// Handle logout for token-based auth
 	public function handleLogout(Request $request)
 	{
-		Auth::logout();
+		try {
+			// Revoke all tokens or just the current token
+			if ($request->input('all_devices', false)) {
+				// Revoke all tokens
+				$request->user()->tokens()->delete();
+			} else {
+				// Revoke only current token
+				$request->user()->currentAccessToken()->delete();
+			}
 
-		$request->session()->invalidate();
-		$request->session()->regenerateToken();
-
-		return response()->json([
-			'success' => true,
-			'message' => 'Đăng xuất thành công'
-		]);
+			return response()->json([
+				'success' => true,
+				'message' => 'Đăng xuất thành công'
+			]);
+		} catch (Exception $e) {
+			Log::error("Logout error: " . $e->getMessage());
+			return response()->json([
+				'success' => false,
+				'message' => 'Có lỗi xảy ra khi đăng xuất'
+			], 500);
+		}
 	}
 
 	public function showConsentScreen($social)
@@ -308,98 +263,141 @@ class AuthController extends Controller
 
 	public function handleSocialCallback(Request $request, $social)
 	{
-		$conn = $this->dbConnService->getDbConn();
-		$pstm = $conn->prepare("select user_id, full_name, email, password from users where email = ?");
 		try {
-			$googleUser = Socialite::driver($social)->user();
+			$socialUser = Socialite::driver($social)->stateless()->user();
+			$email = $socialUser->getEmail();
 
-			$email = $googleUser->getEmail();
-			$pstm->bind_param("s", $email);
-			$pstm->execute();
-			$result = $pstm->get_result();
+			// Find existing user or create new one
+			$user = User::where('email', $email)->first();
 
-			// if user already exists, sign them in directly
-			if ($result->num_rows > 0) {
-				$record = $result->fetch_assoc();
-				$user = new User();
-				$user->user_id = $record['user_id'];
-				$user->email = $record['email'];
-				$user->full_name = $record['full_name'];
-				$user->password = $record['password'];
-				Auth::login(user: $user);
-				$request->session()->regenerate();
+			if (!$user) {
+				// Create new user
+				DB::beginTransaction();
 
-				// Otherwise, create a new user and sign them in
-			} else {
-				$name = $googleUser->getName();
+				$name = $socialUser->getName();
 				$password = AuthUtils::random_password();
 				$emailPrefix = explode('@', $email)[0];
 				$randomUsername = AuthUtils::random_name($emailPrefix);
-				$cart = Cart::create(attributes: [
+
+				$cart = Cart::create([
 					'items_count' => 0,
 				]);
+
 				$user = User::create([
 					'email' => $email,
-					'full_name' => $name,
-					'user_name' => $randomUsername,
+					'name' => $name,
 					'password' => $password,
 					'role_type' => 0,
 					'cart_id' => $cart->cart_id,
 				]);
-				Auth::login(user: $user);
+
+				DB::commit();
 			}
 
-			if (Auth::check()) {
-				Log::debug('Login successful for user: ', ['user_id' => $user->user_id]);
-				$request->session()->regenerate();
-				return response()->json([
-					'success' => true,
-					'message' => 'Đăng nhập thành công',
-					'user' => [
-						'id' => $user->user_id,
-						'name' => $user->full_name,
-						'email' => $user->email
-					]
-				]);
-			} else {
-				Log::debug('Login failed for user: ', ['user_id' => $user->user_id]);
-				throw new Exception();
-			}
+			// Generate token for the user
+			$deviceName = $request->input('device_name', 'mobile-' . $social);
+			$token = $user->createToken($deviceName)->plainTextToken;
 
-		} catch (\mysqli_sql_exception $me) {
-			switch ($me->getCode()) {
-				case 1062:
-					Log::error("MySQL duplicate entry error in func. handleGoogleCallback()", [
-						'error' => $me->getMessage(),
-						'request_data' => $request->all(), // Optional: log request data
-					]);
-					return response()->json([
-						'success' => false,
-						'message' => 'Email đã được đăng ký'
-					], 400);
-				default:
-					// Handle other MySQL error
-					Log::error('A MySQL error occurred in func. handleGoogleCallback()', [
-						'error' => $me->getMessage(),
-						'request_data' => $request->all(), // Optional: log request data
-					]);
-					return response()->json([
-						'success' => false,
-						'message' => 'Có lỗi xảy ra khi đăng nhập'
-					], 500);
-			}
-		} catch (Exception $e) {
-			Log::error('An error occurred in func. handleGoogleCallback()', [
-				'error' => $e->getMessage(),
-				'request_data' => $request->all(), // Optional: log request data
+			Log::debug('Social login successful for user: ', ['user_id' => $user->user_id]);
+
+			return response()->json([
+				'success' => true,
+				'message' => 'Đăng nhập thành công',
+				'user' => $user,
+				'token' => $token
 			]);
 
+		} catch (\mysqli_sql_exception $me) {
+			DB::rollBack();
+			Log::error("MySQL error in social login: " . $me->getMessage());
 			return response()->json([
 				'success' => false,
 				'message' => 'Có lỗi xảy ra khi đăng nhập'
 			], 500);
-		} finally {
-			$pstm->close();
+		} catch (Exception $e) {
+			Log::error('Social login error: ' . $e->getMessage());
+			return response()->json([
+				'success' => false,
+				'message' => 'Có lỗi xảy ra khi đăng nhập'
+			], 500);
+		}
+	}
+
+	public function handleResetPassword(Request $request)
+	{
+		$phone_number = $request->input('phone_number');
+		$new_password = $request->input('new_password');
+		$reset_token = $request->input('reset_token');
+
+		// Check for required inputs
+		if (empty($phone_number) || empty($new_password) || empty($reset_token)) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Số điện thoại, mật khẩu mới và mã xác thực là bắt buộc'
+			], 400);
+		}
+
+		try {
+			// Validate password format
+			try {
+				$new_password = $this->credentialsValidatorService->validateAndReturnPassword(password: $new_password);
+			} catch (Exception $validationErr) {
+				Log::info("Password validation error (user-error)", [
+					'error' => $validationErr,
+					'new_password' => $new_password
+				]);
+				return response()->json([
+					'success' => false,
+					'message' => $validationErr->getMessage()
+				], 400);
+			}
+
+			// Verify token in database
+			$passwordReset = PasswordResets::where('token', $reset_token)
+				->first();
+			if (!$passwordReset) {
+				Log::debug("Password reset token not found in DB");
+				return response()->json([
+					'success' => false,
+					'message' => 'Mã xác thực không hợp lệ hoặc đã hết hạn'
+				], 401);
+			}
+
+			// Update user's password
+			$user = User::where('phone_number', $phone_number)->first();
+			if (!$user) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Không tìm thấy người dùng với số điện thoại này'
+				], 404);
+			}
+
+			$user->password = $new_password;
+			$user->save();
+
+			// Generate a token for automatic login
+			$deviceName = $request->input('device_name', 'mobile');
+			$token = $user->createToken($deviceName)->plainTextToken;
+
+			// Delete used token
+			$passwordReset->delete();
+
+			return response()->json(data: [
+				'success' => true,
+				'message' => 'Mật khẩu đã được cập nhật thành công',
+				'user' => $user,
+				'token' => $token
+			]);
+		} catch (Exception $e) {
+			Log::error("Password reset error", [
+				'error' => $e->getMessage(),
+				'phone_number' => $phone_number
+			]);
+
+			return response()->json([
+				'success' => false,
+				'message' => 'Có lỗi xảy ra khi đặt lại mật khẩu'
+			], 500);
 		}
 	}
 
@@ -451,7 +449,7 @@ class AuthController extends Controller
 
 			$user = new User();
 			$user->user_id = $row['user_id'];
-			$user->full_name = $row['full_name'];
+			$user->name = $row['full_name'];
 			$user->email = $row['email'];
 			$user->password = $row['password'];
 			$user->role_type = $row['role_type'];

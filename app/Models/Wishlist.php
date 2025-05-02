@@ -22,14 +22,17 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @package App\Models
  */
+
 class Wishlist extends Model
 {
 	protected $table = 'wishlists';
 	public $incrementing = false;
+	protected $primaryKey = ['user_id', 'product_id']; // Define composite primary key
+	protected $keyType = 'array'; // Important for composite keys
+	public $timestamps = true;
 
 	protected $casts = [
-		'user_id' => 'int',
-		'product_id' => 'string',
+		'user_id' => 'int'
 	];
 
 	protected $fillable = [
@@ -39,11 +42,40 @@ class Wishlist extends Model
 
 	public function product()
 	{
-		return $this->belongsTo(Product::class);
+		return $this->belongsTo(Product::class, 'product_id', 'product_id');
 	}
 
 	public function user()
 	{
-		return $this->belongsTo(User::class);
+		return $this->belongsTo(User::class, 'user_id', 'user_id');
 	}
+
+	/**
+	 * Set the keys for a save update query.
+	 * This is a override method.
+	 *
+	 * @param  \Illuminate\Database\Eloquent\Builder  $query
+	 * @return \Illuminate\Database\Eloquent\Builder
+	 */
+	protected function setKeysForSaveQuery($query)
+	{
+		$query->where('user_id', $this->getAttribute('user_id'))
+			->where('product_id', $this->getAttribute('product_id'));
+
+		return $query;
+	}
+
+	// /**
+	//  * Set the keys for a delete query.
+	//  *
+	//  * @param  \Illuminate\Database\Eloquent\Builder  $query
+	//  * @return \Illuminate\Database\Eloquent\Builder
+	//  */
+	// protected function setKeysForDeleteQuery($query)
+	// {
+	// 	$query->where('user_id', $this->getAttribute('user_id'))
+	// 		->where('product_id', $this->getAttribute('product_id'));
+
+	// 	return $query;
+	// }
 }

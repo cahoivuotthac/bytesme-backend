@@ -42,29 +42,28 @@ class Product extends Model
 	public $incrementing = false;
 
 	protected $casts = [
-		'type' => 'int',
-		'price' => 'int',
-		'total_orders' => 'int',
-		'total_ratings' => 'int',
-		'overall_stars' => 'float',
-		'is_returnable' => 'int',
-		'stock_quantity' => 'int',
-		'discount_percentage' => 'float',
+		'product_type' => 'int',
+		'product_unit_price' => 'int',
+		'product_total_orders' => 'int',
+		'product_total_ratings' => 'int',
+		'product_overall_stars' => 'float',
+		// 'is_returnable' => 'int',
+		'product_stock_quantity' => 'int',
+		'product_discount_percentage' => 'float',
 	];
 
 	protected $fillable = [
-		'type',
-		'code',
-		'name',
-		'short_description',
-		'detailed_description',
-		'discount_percentage',
-		'price',
-		'total_orders',
-		'total_ratings',
-		'overall_stars',
-		'is_returnable',
-		'stock_quantity',
+		'product_type',
+		'product_code',
+		'product_name',
+		'product_description',
+		'product_unit_price',
+		'product_discount_percentage',
+		'product_total_orders',
+		'product_total_ratings',
+		'product_overall_stars',
+		'product_stock_quantity',
+		// 'is_returnable',
 	];
 
 	public function order_items()
@@ -109,7 +108,8 @@ class Product extends Model
 		return $this->hasMany(ProductImage::class, 'product_id', 'product_id');
 	}
 
-	public function getSoldQuantityAttribute() {
+	public function getSoldQuantityAttribute()
+	{
 		return $this->order_items->sum('quantity');
 	}
 

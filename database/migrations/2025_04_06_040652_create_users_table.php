@@ -26,9 +26,9 @@ return new class extends Migration {
 			$table->timestamp('phone_verified_at')->nullable();
 			$table->string('password');
 			$table->string('phone_number', 10)->unique();
-			$table->string('province_city', 255)->nullable();
-			$table->string('district', 255)->nullable();
-			$table->string('commune_ward', 255)->nullable();
+			$table->string('urban', 255)->nullable();
+			$table->string('suburb', 255)->nullable();
+			$table->string('quarter', 255)->nullable();
 			$table->string('address', 255)->nullable();
 			$table->integer('cart_id')->nullable()->index();
 			$table->longText('avatar')->nullable();

@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
 			// ReturnRefundItemSeeder::class,
 			// ProductFeedbackSeeder::class,
 			UserSeeder::class,
+			ProductSeeder::class,
 		]);
 	}
 }

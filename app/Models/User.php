@@ -12,6 +12,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Laravel\Sanctum\HasApiTokens;
 
 /**
  * Class User
@@ -36,14 +37,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
  * @property Cart|null $cart
  * @property Collection|Order[] $orders
  * @property Collection|ProductFeedback[] $product_feedbacks
- * @property Collection|ReturnRefundItem[] $return_refund_items
  *
  * @package App\Models
  */
 class User extends Authenticatable
 {
-	use HasFactory;
-
+	use HasFactory, HasApiTokens;
 	use AuthenticatableTrait;
 	use Notifiable;
 
@@ -56,7 +55,8 @@ class User extends Authenticatable
 		'role_type' => 'int',
 		'date_of_birth' => 'datetime',
 		'cart_id' => 'int',
-		'password' => 'hashed'
+		'password' => 'hashed',
+		'remember_token' => 'hashed',
 	];
 
 	protected $hidden = [
@@ -69,10 +69,11 @@ class User extends Authenticatable
 		'email',
 		'name',
 		'password',
+		'remember_token',
 		'phone_number',
-		'province_city',
-		'district',
-		'commune_ward',
+		'urban',
+		'suburb',
+		'quarter',
 		'address',
 		'gender',
 		'date_of_birth',
@@ -96,10 +97,11 @@ class User extends Authenticatable
 		return $this->hasMany(ProductFeedback::class, 'user_id', 'user_id');
 	}
 
-	public function return_refund_items()
-	{
-		return $this->hasMany(ReturnRefundItem::class);
-	}
+
+	// public function return_refund_items()
+	// {
+	// 	return $this->hasMany(ReturnRefundItem::class);
+	// }
 
 	public function wishlist()
 	{
