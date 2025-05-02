@@ -1,35 +1,145 @@
 <?php
 
+use App\Http\Controllers\AddressController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OTPController;
-
-Route::get('/', function () {
-	return view('welcome');
-});
-
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\WishlistController;
 
 /**
  * @notice Auth routes
  */
-// Route::get('/auth', [AuthController::class, 'showLoginForm'])->name('auth.index');
-// Route::get('/auth/login', [AuthController::class, 'showLoginForm'])->name('auth.showLoginForm');
-Route::post('/auth/login', [AuthController::class, 'handleLogin'])->name('auth.login');
+Route::prefix('auth')->group(function () {
+	Route::post('/signin', [AuthController::class, 'handleSignin']);
+	Route::post('/signup', [AuthController::class, 'handleSignup']);
+	Route::post('/reset-password', [AuthController::class, 'handleResetPassword']);
 
-// Logout
-Route::post('/auth/logout', [AuthController::class, 'handleLogout'])->name('auth.logout');
+	// OTP code - phone number verification
+	Route::post('/otp/gen', [OTPController::class, 'generate']);
+	Route::post('/otp/verify', [OTPController::class, 'verify']);
 
-// Registe
-// Route::get('/auth/register', action: [AuthController::class, 'showRegistrationForm'])->name('auth.showRegisterForm');
-Route::post('/auth/register', [AuthController::class, 'handleRegister'])->name('auth.register');
+	// Protected auth routes
+	Route::middleware('auth:sanctum')->group(function () {
+		Route::post('/logout', [AuthController::class, 'handleLogout']);
+		Route::get('/user', function (Request $request) {
+			return response()->json(data: $request->user());
+		});
+	});
 
-// OAuth2 social login
-Route::post('/auth/login/{social}', [AuthController::class, 'showConsentScreen']);
-Route::get('/auth/login/{social}/callback', [AuthController::class, 'handleSocialCallback']);
-
-Route::get('/get-csrf-token', function () {
-	return response()->json(['token' => csrf_token()]);
+	// OAuth2 social login
+	Route::post('signin/{social}', [AuthController::class, 'showConsentScreen']);
+	Route::get('signin/{social}/callback', [AuthController::class, 'handleSocialCallback']);
 });
 
-Route::post('/auth/otp/gen', [OTPController::class, 'generate']);
-Route::post('/auth/otp/verify', [OTPController::class, 'verify']);
+Route::prefix('product')->group(function () {
+	Route::get('/homepage-products', [ProductController::class, 'getHomepageProducts']);
+	Route::get('/{id}', function ($id) {
+		return response()->json(['product_id' => $id]);
+	});
+});
+
+// Use sanctum auth middleware for user routes
+Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
+	Route::group(['prefix' => 'cart'], function () {
+		Route::get('/', [UserController::class, 'getCart']);
+		Route::post('/add', [UserController::class, 'addToCart']);
+		Route::post('/remove', [UserController::class, 'removeFromCart']);
+		Route::post('/update', [UserController::class, 'updateCart']);
+		Route::post('/checkout', [UserController::class, 'checkout']);
+	});
+
+	Route::group(['prefix' => 'wishlist'], function () {
+		Route::get('/', [WishlistController::class, 'getWishlist']);
+		Route::post('/add', [WishlistController::class, 'addToWishlist']);
+		Route::post('/remove', [WishlistController::class, 'removeFromWishlist']);
+	});
+
+	Route::post('/update-address', [UserController::class, 'updateAddress']);
+});
+
+Route::prefix('info')->group(function () {
+	Route::prefix('address')->group(function (): void {
+		route::get('/urban-list', function () {
+			// Read the JSON file from the public directory
+			$jsonFilePath = public_path('constants/vietnam-address/tinh-tp.json');
+
+			// Check if the file exists
+			if (!file_exists($jsonFilePath)) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Province & City list not found'
+				], 404);
+			}
+
+			// Read and decode the JSON file
+			$jsonData = file_get_contents($jsonFilePath);
+			$data = json_decode($jsonData, associative: true);
+
+			// Return the data as JSON response
+			return response()->json($data);
+		});
+		Route::get('/suburb-list', function (Request $request) {
+			$urbanCode = $request->query('urbanCode');
+
+			if (!$urbanCode) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Province ID is required'
+				], 400);
+			}
+
+			// Read the JSON file from the public directory
+			$jsonFilePath = public_path("constants/vietnam-address/quan-huyen/{$urbanCode}.json");
+
+			// Check if the file exists
+			if (!file_exists($jsonFilePath)) {
+				return response()->json([
+					'success' => false,
+					'message' => 'District list not found'
+				], 404);
+			}
+
+			// Read and decode the JSON file
+			$jsonData = file_get_contents($jsonFilePath);
+			$data = json_decode($jsonData, associative: true);
+
+			// Return the data as JSON response
+			return response()->json($data);
+		});
+
+		Route::get('/quarter-list', function (Request $request) {
+			$suburbCode = $request->query('suburbCode');
+
+			if (!$suburbCode) {
+				return response()->json([
+					'success' => false,
+					'message' => 'District ID is required'
+				], 400);
+			}
+
+			// Read the JSON file from the public directory
+			$jsonFilePath = public_path('constants/vietnam-address/xa-phuong/' . $suburbCode . '.json');
+
+			// Check if the file exists
+			if (!file_exists($jsonFilePath)) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Ward list not found'
+				], 404);
+			}
+
+			// Read and decode the JSON file
+			$jsonData = file_get_contents($jsonFilePath);
+			$data = json_decode($jsonData, associative: true);
+
+			// Return the data as JSON response
+			return response()->json($data);
+
+		});
+		Route::get('/reverse-geocode', [AddressController::class, "reverse_geocode"]);
+	});
+});
+
