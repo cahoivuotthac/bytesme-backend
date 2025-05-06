@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -18,8 +19,10 @@ Route::prefix('auth')->group(function () {
 	Route::post('/reset-password', [AuthController::class, 'handleResetPassword']);
 
 	// OTP code - phone number verification
-	Route::post('/otp/gen', [OTPController::class, 'generate']);
-	Route::post('/otp/verify', [OTPController::class, 'verify']);
+	Route::group(['prefix' => 'otp'], function () {
+		Route::post('/gen', [OTPController::class, 'generate']);
+		Route::post('/verify', [OTPController::class, 'verify']);
+	});
 
 	// Protected auth routes
 	Route::middleware('auth:sanctum')->group(function () {
@@ -55,6 +58,19 @@ Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
 		Route::get('/', [WishlistController::class, 'getWishlist']);
 		Route::post('/add', [WishlistController::class, 'addToWishlist']);
 		Route::post('/remove', [WishlistController::class, 'removeFromWishlist']);
+	});
+
+	Route::group(['prefix' => 'cart'], function () {
+		Route::get('/', [CartController::class, 'getCartItems']);
+		Route::post('/add', [CartController::class, 'addToCart']);
+		Route::post('/remove', [CartController::class, 'removeFromCart']);
+		Route::post('/checkout', [CartController::class, 'checkout']);
+		Route::post('/update-item-quantity', [CartController::class, 'updateItemQuantity']);
+		Route::post('/update-item-size', [CartController::class, 'updateItemSize']);
+	});
+
+	Route::get('/test', function () {
+		return response()->json(['message' => 'Test route']);
 	});
 
 	Route::post('/update-address', [UserController::class, 'updateAddress']);

@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  * Class Cart
  *
  * @property int $cart_id
- * @property int|null $items_count
+ * @property int|null $cart_items_count
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  *
@@ -28,18 +28,19 @@ class Cart extends Model
 	protected $primaryKey = 'cart_id';
 
 	protected $casts = [
-		'items_count' => 'int'
+		'cart_items_count' => 'int'
 	];
 
 	protected $fillable = [ //mass-assigned
-		'items_count'
+		'cart_items_count'
 	];
 
 	public function user()
 	{
 		return $this->hasMany(User::class, 'cart_id', 'cart_id');
 	}
-	public function items(){
+	public function items()
+	{
 		return $this->hasMany(CartItem::class, 'cart_id', 'cart_id');
 	}
 }

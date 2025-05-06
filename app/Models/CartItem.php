@@ -14,9 +14,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Class CartItem
  *
  * @property int $cart_id
- * @property string $product_id
- * @property int|null $quantity
- * @property int|null $unit_price
+ * @property int $product_id
+ * @property int|null $cart_items_quantity
+ * @property int|null $cart_items_unitprice
+ * @property string|null $cart_items_size
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property int $original_price
@@ -31,16 +32,20 @@ class CartItem extends Model
 
 	protected $casts = [
 		'cart_id' => 'int',
-		'product_id' => 'string',
-		'quantity' => 'int',
+		'product_id' => 'int',
+		'cart_items_quantity' => 'int',
+		'cart_items_unitprice' => 'int',
+		'cart_items_size' => 'string',
 	];
 
 	protected $fillable = [
 		'cart_id',
 		'product_id',
-		'quantity',
-		'original_price',
-		'discount_amount',
+		'cart_items_quantity',
+		'cart_items_unitprice',
+		'cart_items_size',
+		// 'original_price',
+		// 'discount_amount',
 		// 'final_price'
 	];
 
@@ -49,7 +54,8 @@ class CartItem extends Model
 		return $this->belongsTo(Cart::class, 'cart_id');
 	}
 
-	public function getUnitPriceAttribute() {
+	public function getUnitPriceAttribute()
+	{
 		return $this->getRelation('product')->price;
 	}
 
@@ -60,7 +66,7 @@ class CartItem extends Model
 
 	public function getOriginalPriceAttribute()
 	{
-		return $this->unit_price * $this->quantity;
+		return $this->cart_items_unitprice * $this->cart_items_quantity;
 	}
 	public function getDiscountAmountAttribute()
 	{
@@ -77,5 +83,4 @@ class CartItem extends Model
 		return $query->where('cart_id', $this->getAttribute('cart_id'))
 			->where('product_id', $this->getAttribute('product_id'));
 	}
-
 }

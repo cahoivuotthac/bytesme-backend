@@ -14,7 +14,8 @@ class WishlistController extends Controller
 			$user = $request->user();
 			$productId = $request->input('product_id');
 
-			Log::info("I'm here in addToWishlist");
+
+			Log::info("Request input: ", ['data' => $request->input()]);
 
 			if (!$user) {
 				return response()->json(['message' => 'Unauthorized'], 401);

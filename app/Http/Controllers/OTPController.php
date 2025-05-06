@@ -24,10 +24,22 @@ class OTPController extends Controller
 	public function generate(Request $request): \Illuminate\Http\JsonResponse
 	{
 		// Validate input
-		$validatedData = $request->validate([
-			'phone_number' => 'required|string|min:10|max:15',
-			'is_password_reset' => 'nullable|string',
-		]);
+		try {
+			$validatedData = $request->validate([
+				'phone_number' => 'required|string|min:10|max:15',
+				'is_password_reset' => 'nullable|string',
+			]);
+		} catch (Exception $e) {
+			Log::error("Input validation error", [
+				'error' => $e->getMessage(),
+				'input' => $request->all()
+			]);
+
+			return response()->json([
+				'success' => false,
+				'message' => 'Invalid input'
+			], 400);
+		}
 
 		$phone_number = $validatedData['phone_number'];
 		$is_password_reset = $validatedData['is_password_reset'] ?? "false";

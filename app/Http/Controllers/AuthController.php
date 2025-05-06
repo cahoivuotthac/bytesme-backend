@@ -172,9 +172,7 @@ class AuthController extends Controller
 		$user = null;
 		try {
 			DB::beginTransaction();
-			$cart = Cart::create(attributes: [
-				'items_count' => 0,
-			]);
+			$cart = Cart::create();
 			$user = User::create(attributes: [
 				'phone_number' => $phone_number,
 				'name' => !empty($name) ? $name : explode('@', $email)[0],

@@ -18,6 +18,7 @@ use Laravel\Sanctum\HasApiTokens;
  * Class User
  *
  * @property int $user_id
+ * @property int|null $cart_id
  * @property int $role_type
  * @property string|null $email
  * @property string $name

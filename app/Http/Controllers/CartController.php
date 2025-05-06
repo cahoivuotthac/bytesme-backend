@@ -2,9 +2,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\CartItem;
+use App\Models\Wishlist;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Cart;
@@ -12,17 +14,27 @@ use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {
-	public function getCartItems(User $user): array
+	public function getCartItems()
 	{
+		$user = Auth::user();
 		try {
 			$cartId = $user->getAttribute('cart_id');
-			$cartItems = CartItem::with(['product']) // Eloquent ORM: fetches all cart items with associated product
-				->where('cart_id', $cartId) // Condition to ensure only cart items of the user are fetched
-				->get();
+			Log::debug('Cart ID:', ['cart_id' => $cartId]);
+			$user_id = $user->user_id;
+			$cartItems = CartItem::with(['product.productImages'])
+				->where('cart_id', $cartId)
+				->get()
+				->map(function ($cartItem) use ($user_id) {
+					$cartItem->is_wishlisted = Wishlist::where([
+						'user_id' => $user_id,
+						'product_id' => $cartItem->product_id
+					])->exists();
+					return $cartItem;
+				});
 
 			$inStockItems = CartItem::with(['product'])
-				->whereHas('product', function($query) {
-					$query->where('stock_quantity', '>', 0);
+				->whereHas('product', function ($query) {
+					$query->where('product_stock_quantity', '>', 0);
 				})
 				->where('cart_id', $cartId)
 				->get();
@@ -31,23 +43,28 @@ class CartController extends Controller
 			$totalQuantity = $inStockItems->sum('quantity');
 			$totalPrice = $inStockItems->sum('original_price');
 			$totalDiscountAmount = $inStockItems->sum('discount_amount');
-			return [
+			return response()->json([
 				'cartItems' => $cartItems,
 				'instockCartItems' => $inStockItems,
 				'totalPrice' => $totalPrice,
 				'totalDiscountAmount' => $totalDiscountAmount,
 				'totalDiscountedPrice' => $totalDiscountedPrice,
 				'totalQuantity' => $totalQuantity
-			];
+			]);
 		} catch (Exception $e) {
-			return [
+			Log::error('Failed to fetch cart items', [
+				'user_id' => $user->user_id,
+				'error' => $e->getMessage()
+			]);
+			return response()->json([
 				'cartItems' => [],
+				'instockCartItems' => [],
 				'totalPrice' => 0,
 				'totalDiscountAmount' => 0,
 				'totalDiscountedPrice' => 0,
 				'totalQuantity' => 0,
 				'error' => 'Failed to fetch cart items!'
-			];
+			], 500);
 		}
 	}
 
@@ -57,12 +74,12 @@ class CartController extends Controller
 			$user = Auth::user();
 			$cartId = $user->cart_id;
 
-			$cartItem = CartItem::whereHas('product', function($query) {
+			$cartItem = CartItem::whereHas('product', function ($query) {
 				$query->where('stock_quantity', '>', 0);
 			})->where([
-				'cart_id' => $cartId,
-				'product_id' => $request->product_id
-			])->first();
+						'cart_id' => $cartId,
+						'product_id' => $request->product_id
+					])->first();
 
 			if ($cartItem) {
 				$cartItem->update([
@@ -91,106 +108,80 @@ class CartController extends Controller
 		}
 	}
 
-	public function showCartItems(Request $request)
+	public function addToCart(Request $request)
 	{
 		try {
-			if (Auth::check()) {
-				$user = Auth::user(); // Gets User model instance
-				if ($user instanceof User) {
-					$cartItems = $this->getCartItems($user);
-
-					// Store voucher data in session if present
-					if ($request->has('voucher_id')) {
-						session([
-							'voucher_id' => $request->voucher_id
-						]);
-					}
-
-					 // Add voucher data to view data
-					$viewData = array_merge($cartItems, [
-						'voucher_id' => session('voucher_id'),
-						'voucher_value' => session('voucher_value')
-					]);
-
-					return view('cart.items', $viewData);
-				}
+			// Validate input
+			try {
+				$validatedData = $request->validate([
+					'product_id' => 'required|integer',
+					'quantity' => 'integer|min:1'
+				]);
+			} catch (Exception $e) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Invalid input data',
+					'errors' => $e->getMessage()
+				], 400);
 			}
-		} catch (Exception $e) {
-			return response()->json([
-				'success' => false,
-				'message' => 'Failed to fetch cart items!',
-			], 500);
-		}
-	}
 
-	public function insertItemToCart(Request $request)
-	{
-		try {
 			$user = Auth::user();
-			$productId = $request->input('product_id');
-			$quantity = (int)$request->input('quantity', 1);
-			$isValid = true;
-			$errorMessage = '';
-			Log::debug('Request quantity:', ['quantity'=> $quantity]);
-			
+			$quantity = $validatedData['quantity'] ?? 1;
+			$productId = $validatedData['product_id'];
+			Log::debug('Request quantity:', ['quantity' => $quantity]);
+
 			// Validate product exists
 			$product = Product::find($productId);
 			if (!$product) {
-				$isValid = false;
-				$errorMessage = 'Product not found';
-			}
-			
-			if ($isValid) {
-				//Get or create cart in a single query
-				$cart = Cart::firstOrCreate(
-					['cart_id' => $user->cart_id],
-					['items_count' => 0]
-				);
-
-				$cartItem = CartItem::with(['product'])
-					->where('cart_id', $user->cart_id)
-					->where('product_id', $productId)
-					->first();
-				
-				// Stock validation
-				$newQuantity = $cartItem ? $cartItem->quantity + $quantity : $quantity;
-				if ($product->getAttribute('stock_quantity') < $newQuantity) {
-					$isValid = false;
-					$errorMessage = 'Insufficient stock available';
-				}
-
-				Log::debug('Stock quantity:', ['quantity'=> $newQuantity]);
-
-				if ($isValid) {
-					if (!$cartItem) {
-						CartItem::create([
-							'cart_id' => $cart->cart_id,
-							'product_id' => $productId,
-							'quantity' => $newQuantity
-						]);
-					} else {
-						CartItem::where([
-							'cart_id' => $user->cart_id,
-							'product_id' => $productId
-						])->update([
-							'quantity' => $newQuantity
-						]);
-					}
-					
-					// Update the items count
-					$cart->items_count = CartItem::where('cart_id', $user->cart_id)
-						->sum('quantity');
-					$cart->save();
-
-					return response()->json([
-						'success' => true,
-						'message' => 'Item added to cart successfully',
-						'items_count' => $cart->items_count
-					]);
-				}
+				return response()->json([
+					'success' => false,
+					'message' => 'Product not found'
+				], 404);
 			}
 
-			return $this->errorResponse($errorMessage, 400);
+			// Get or create cart in a single query
+			$cart = Cart::firstOrCreate(
+				['cart_id' => $user->cart_id],
+			);
+
+			$cartItem = CartItem::with(['product'])
+				->where('cart_id', $user->cart_id)
+				->where('product_id', $productId)
+				->first();
+
+			// Stock validation
+			$newQuantity = $cartItem ? $cartItem->cart_items_quantity + $quantity : $quantity;
+			Log::debug('Stock quantity:', ['quantity' => $newQuantity]);
+			if ($product->getAttribute('product_stock_quantity') < $newQuantity) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Insufficient stock available'
+				], 400);
+			}
+
+			if ($cartItem) {
+				$cartItem->update([
+					'cart_items_quantity' => $newQuantity
+				]);
+				$cartItem->save();
+			} else {
+				CartItem::create([
+					'cart_id' => $cart->cart_id,
+					'product_id' => $productId,
+					'cart_items_quantity' => $newQuantity
+				]);
+			}
+
+			// Update the items count
+			$cart->cart_items_count = CartItem::where('cart_id', $user->cart_id)
+				->sum('cart_items_quantity');
+			$cart->save();
+
+			return response()->json([
+				'success' => true,
+				'message' => 'Item added to cart successfully',
+				'items_count' => $cart->cart_items_count
+			]);
 
 		} catch (Exception $e) {
 			Log::error('Failed to add item to cart', [
@@ -198,39 +189,111 @@ class CartController extends Controller
 				'product_id' => $productId ?? null,
 				'error' => $e->getMessage()
 			]);
-			return $this->errorResponse('Failed to add item to cart', 500);
+			return response()->json([
+				'success' => false,
+				'message' => 'Failed to add item to cart'
+			], 500);
 		}
 	}
 
-	public function removeCartItem($cartId, $productId)
+	public function removeFromCart(Request $request)
 	{
+		// Validate input
+		try {
+			$validatedData = $request->validate([
+				'product_id' => 'required|integer',
+			]);
+		} catch (Exception $e) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Invalid input data',
+				'errors' => $e->getMessage()
+			], 400);
+		}
+
+		$productId = $validatedData['product_id'];
+		$user = Auth::user();
+		$cartId = $user->cart_id;
 		try {
 			$cartItem = CartItem::where('cart_id', $cartId)
-				->where('product_id', $productId);
+				->where('product_id', $productId)->first();
 
-			if ($cartItem instanceof CartItem) {
+			if (!$cartItem) {
 				return response()->json([
 					'success' => false,
 					'message' => 'Cart item not found!'
-				], 404);
+				], 400);
 			}
 
 			$cartItem->delete();
 
 			$cart = Cart::find($cartId);
-			$cart->items_count = CartItem::where('cart_id', $cartId)->sum('quantity');
+			$cart->cart_items_count = CartItem::where('cart_id', $cartId)->sum('cart_items_quantity');
 			$cart->save();
 
 			return response()->json([
 				'success' => true,
 				'message' => 'Item removed successfully!',
-				'items count' => $cart->items_count
+				'items count' => $cart->cart_items_count
 			]);
+
+		} catch (Exception $e) {
+			Log::error('Failed to remove item from cart', [
+				'user_id' => $user->user_id,
+				'cart_id' => $cartId,
+				'product_id' => $productId,
+				'error' => $e->getMessage()
+			]);
+			return response()->json([
+				'success' => false,
+				'message' => 'Failed to remove item!'
+			], 500);
+		}
+	}
+
+	public function updateItemQuantity(Request $request)
+	{
+		try {
+			$user = Auth::user();
+			$cartId = $user->cart_id;
+			$productId = $request->input('product_id');
+			$quantity = $request->input('quantity');
+
+			$cartItem = CartItem::where('cart_id', $cartId)
+				->where('product_id', $productId)
+				->first();
+
+			if ($cartItem) {
+				if ($quantity <= 0) {
+					return response()->json([
+						'success' => false,
+						'message' => 'Invalid quantity'
+					], 400);
+				}
+
+				$cartItem->cart_items_quantity = $quantity;
+				$cartItem->save();
+
+				// Update the items count
+				$cart = Cart::find($cartId);
+				$cart->cart_items_count = CartItem::where('cart_id', $cartId)
+					->sum('cart_items_quantity');
+
+				return response()->json([
+					'success' => true,
+					'message' => 'Cart item quantity updated successfully'
+				]);
+			}
+
+			return response()->json([
+				'success' => false,
+				'message' => 'Item is not in cart'
+			], 400);
 
 		} catch (Exception $e) {
 			return response()->json([
 				'success' => false,
-				'message' => 'Failed to remove item!'
+				'message' => 'Failed to update cart item quantity'
 			], 500);
 		}
 	}
@@ -259,7 +322,7 @@ class CartController extends Controller
 
 			$inStockItems = [];
 
-			foreach ($items as $item){
+			foreach ($items as $item) {
 				$productId = $item['product_id'];
 				$quantity = $item['quantity'];
 
@@ -267,7 +330,7 @@ class CartController extends Controller
 					->where('product_id', $productId)
 					->first();
 
-            	// Check product stock
+				// Check product stock
 				$product = Product::find($productId);
 				if ($cartItem && $product && $product->getAttribute('stock_quantity') > 0) {
 					$cartItem->quantity = $quantity;
@@ -284,7 +347,7 @@ class CartController extends Controller
 				'message' => 'Cart updated successfully',
 				'updated_items' => $inStockItems,
 				'items_count' => $cart->items_count
-        	]);
+			]);
 
 		} catch (Exception $e) {
 			return response()->json([
@@ -294,28 +357,66 @@ class CartController extends Controller
 		}
 	}
 
-	public function showCheckout()
+	public function updateItemSize(Request $request)
 	{
+		// Validate input
 		try {
-			if (Auth::check()) {
-				$user = Auth::user();
-				if ($user instanceof User) {
-					$cartItems = $this->getCartItems($user);
-					
-					// Add voucher data from session to view data
-					$viewData = array_merge($cartItems, [
-						'voucher_name' => session('voucher_name'),
-						'voucher_discount' => session('voucher_discount')
-					]);
-
-					return view('cart.checkout', $viewData);
-				}
-			}
-			return redirect()->route('login');
+			$validatedData = $request->validate([
+				'product_id' => 'required|integer',
+				'size' => 'required|string|max:255'
+			]);
 		} catch (Exception $e) {
 			return response()->json([
 				'success' => false,
-				'message' => 'Failed to load checkout page!'
+				'message' => 'Invalid input data',
+				'errors' => $e->getMessage()
+			], 400);
+		}
+
+		try {
+			$user = Auth::user();
+			$cartId = $user->cart_id;
+			$productId = $validatedData['product_id'];
+			$size = $validatedData['size'];
+
+			$cartItem = CartItem::with(['product'])->where('cart_id', $cartId)
+				->where('product_id', $productId)
+				->first();
+
+			if ($cartItem) {
+				// Check if the product has size options
+				if ($cartItem->product->product_prices_sizes) {
+					Log::debug('Product has size options', ['product_id' => $productId]);
+					$sizes = $cartItem->product->product_prices_sizes->sizes;
+					$selectedIndex = array_search($size, $sizes);
+					if ($selectedIndex === false) {
+						return response()->json([
+							'success' => false,
+							'message' => 'Size is not available for this product'
+						], 400);
+					}
+					$selectedPrice = $cartItem->product->product_prices_sizes->prices[$selectedIndex];
+					$cartItem->cart_items_unitprice = $selectedPrice;
+					$cartItem->cart_items_size = $size;
+				}
+				$cartItem->cart_items_size = $size;
+				$cartItem->save();
+
+				return response()->json([
+					'success' => true,
+					'message' => 'Cart item size updated successfully'
+				]);
+			}
+
+			return response()->json([
+				'success' => false,
+				'message' => 'Item is not in cart'
+			], 400);
+
+		} catch (Exception $e) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Failed to update cart item size'
 			], 500);
 		}
 	}
