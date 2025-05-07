@@ -60,7 +60,7 @@ class UserFactory extends Factory
 			$userId = $user->getAttribute('user_id');
 			$cart = Cart::create([
 				'cart_id' => $userId,
-				'items_count' => 0
+				'cart_items_count' => 0
 			]);
 
 			$user->update([
