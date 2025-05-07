@@ -4,7 +4,6 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use App\Services\CredentialsValidatorService;
-use App\Providers\DBConnService;
 
 class CredentialsValidatorServiceProvider extends ServiceProvider
 {
@@ -13,12 +12,7 @@ class CredentialsValidatorServiceProvider extends ServiceProvider
 	 */
 	public function register(): void
 	{
-		if (!class_exists(CredentialsValidatorService::class)) {
-			throw new \Exception('OrderService class not found!');
-		}
-		$this->app->bind(CredentialsValidatorService::class, function ($app) {
-			return new CredentialsValidatorService($app->make(DBConnService::class));
-		});
+		$this->app->singleton(CredentialsValidatorService::class);
 	}
 
 	/**

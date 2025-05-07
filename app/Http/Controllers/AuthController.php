@@ -11,9 +11,8 @@ use App\Models\OTP;
 use Illuminate\Support\Facades\Cache;
 use Exception;
 use Auth;
-use App\Providers\DBConnService;
-use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Log;
+use Laravel\Socialite\Facades\Socialite;
 use App\Services\CredentialsValidatorService;
 
 class AuthUtils
@@ -55,13 +54,9 @@ class AuthUtils
 class AuthController extends Controller
 {
 	protected CredentialsValidatorService $credentialsValidatorService;
-	protected DBConnService $dbConnService;
 
-	public function __construct(
-		DBConnService $dbConnService,
-		CredentialsValidatorService $credentialsValidatorService,
-	) {
-		$this->dbConnService = $dbConnService;
+	public function __construct(CredentialsValidatorService $credentialsValidatorService) 
+	{
 		$this->credentialsValidatorService = $credentialsValidatorService;
 	}
 
@@ -305,7 +300,7 @@ class AuthController extends Controller
 				'token' => $token
 			]);
 
-		} catch (\mysqli_sql_exception $me) {
+		} catch (Exception $me) {
 			DB::rollBack();
 			Log::error("MySQL error in social login: " . $me->getMessage());
 			return response()->json([
@@ -409,49 +404,31 @@ class AuthController extends Controller
 
 	public function handleAdminLogin(Request $request)
 	{
-		$request_data = $_POST;
-		$password = "";
-
 		try {
-			$username = $request_data["username"];
-			$password = $this->credentialsValidatorService->validateAndReturnPassword($request_data);
+			$username = $request->input('username');
+			$password = $request->input('password');
+			
+			// Validate the password
+			$password = $this->credentialsValidatorService->validateAndReturnPassword($password);
 
-			$conn = $this->dbConnService->getDBConn();
-			$sql = "select user_id, full_name, email, password, role_type from users where user_name = ?";
-			$pstm = $conn->prepare($sql);
-			$pstm->bind_param("s", $username);
-			$pstm->execute();
-			$result = $pstm->get_result();
+			// Find the user with the admin role
+			$user = User::where('user_name', $username)
+						->where('role_type', 1)
+						->first();
 
-			if ($result->num_rows == 0) {
-				Log::debug('User not found in database', [
-					'email' => $username,
+			if (!$user) {
+				Log::debug('User not found or not an admin', [
+					'username' => $username,
 				]);
 				throw new Exception("Invalid credentials");
 			}
 
-			$row = $result->fetch_assoc();
-			Log::debug('User found in database', [
-				'user' => $row,
-			]);
-
-			// Check if user is admin
-			if ($row['role_type'] != 1) {
-				throw new Exception("Unauthorized access");
-			}
-
 			// Verify password
-			if (!password_verify($password, $row['password'])) {
+			if (!password_verify($password, $user->password)) {
 				throw new Exception("Invalid credentials");
 			}
 
-			$user = new User();
-			$user->user_id = $row['user_id'];
-			$user->name = $row['full_name'];
-			$user->email = $row['email'];
-			$user->password = $row['password'];
-			$user->role_type = $row['role_type'];
-
+			// Login the user
 			Auth::login($user);
 			$request->session()->regenerate();
 
@@ -460,7 +437,7 @@ class AuthController extends Controller
 		} catch (Exception $e) {
 			Log::error("Admin login error", [
 				'error' => $e->getMessage(),
-				'email' => $username
+				'username' => $username ?? 'not provided'
 			]);
 			return redirect()->back()->withErrors($e->getMessage());
 		}

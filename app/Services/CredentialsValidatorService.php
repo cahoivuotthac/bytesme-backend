@@ -1,20 +1,12 @@
 <?php
 
-namespace app\services;
+namespace App\Services;
 
-use App\Providers\DBConnService;
 use Exception;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 class CredentialsValidatorService
 {
-	protected DBConnService $dbConnService;
-
-	public function __construct(DBConnService $dBConnService)
-	{
-		$this->dbConnService = $dBConnService;
-	}
-
 	public function validateAndReturnEmail(string $email, bool $is_login = false): mixed
 	{
 		// email length check
@@ -27,28 +19,7 @@ class CredentialsValidatorService
 			throw new Exception("email format is invalid");
 		}
 
-		// check email availability
-		// if (!$is_login) {
-		// 	try {
-		// 		$conn = $this->dbConnService->getDBConn();
-		// 		$sql = "select email from users where email = ?";
-		// 		$pstm = $conn->prepare($sql);
-		// 		$pstm->bind_param("s", $email);
-		// 		$pstm->execute();
-		// 		$result = $pstm->get_result();
-		// 		if ($result->num_rows > 0) {
-		// 			throw new Exception(message: "email has been taken");
-		// 		}
-		// 	} catch (Exception $e) {
-		// 		Log::error("Error occurred when validating email", [
-		// 			'error' => $e->getMessage(),
-		// 		]);
-		// 	} finally {
-		// 		$pstm->close();
-		// 	}
-		// }
-
-		// not throwing any exception, all good
+		 // not throwing any exception, all good
 		return $email;
 	}
 
