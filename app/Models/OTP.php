@@ -27,6 +27,7 @@ class OTP extends Model
 
 	protected $casts = [
 		'verified_at' => 'string',
+		'phone_number' => 'string',
 	];
 
 	protected $fillable = [ //mass-assigned

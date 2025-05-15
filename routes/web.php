@@ -69,6 +69,13 @@ Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
 		Route::post('/update-item-size', [CartController::class, 'updateItemSize']);
 	});
 
+	Route::group(['prefix' => 'addresses'], function () {
+		Route::get('/', [UserController::class, 'getUserAddresses']);
+		Route::post('/add', [UserController::class, 'addAddress']);
+		Route::post('/remove', [UserController::class, 'removeAddress']);
+		Route::post('/set-default', [UserController::class, 'setDefaultAddress']);
+	});
+
 	Route::get('/test', function () {
 		return response()->json(['message' => 'Test route']);
 	});

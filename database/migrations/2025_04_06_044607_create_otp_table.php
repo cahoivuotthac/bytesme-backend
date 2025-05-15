@@ -11,7 +11,8 @@ return new class extends Migration {
 	public function up(): void
 	{
 		Schema::create('otp', function (Blueprint $table) {
-			$table->id('phone_number');
+			$table->string('phone_number')->unique(); // Unique phone number
+			$table->primary('phone_number');
 			$table->string('code');
 			$table->timestamp('verified_at')->nullable();
 			$table->timestamps();  // created_at and updated_at fields

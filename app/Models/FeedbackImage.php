@@ -33,7 +33,7 @@ class FeedbackImage extends Model
 
 	protected $fillable = [
 		'product_feedback_id',
-		'feedback_image', // Make sure this is included
+		'feedback_image',
 	];
 
 	public function product_feedback()

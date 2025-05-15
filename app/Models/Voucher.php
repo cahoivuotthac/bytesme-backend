@@ -33,28 +33,31 @@ class Voucher extends Model
 	protected $primaryKey = 'voucher_id';
 
 	protected $casts = [
+		'voucher_id' => 'int',
+		'voucher_type' => 'string',
+		'voucher_fields' => 'string',
+		'voucher_name' => 'string',
+		'voucher_description' => 'string',
 		'voucher_start_date' => 'datetime',
 		'voucher_end_date' => 'datetime',
-		'value' => 'int',
-		'voucher_type' => 'string',
-		'voucher_name' => 'string',
-		'description' => 'string',
-		'voucher_id' => 'int',
-		'is_hidden' => 'int',
+		'voucher_value' => 'int',
+		// 'is_hidden' => 'int',
 	];
 
 	protected $fillable = [
 		'voucher_name',
 		'voucher_type', // percentage or cash
-		'description',
+		'voucher_description',
 		'voucher_start_date',
 		'voucher_end_date',
-		'value',
-		'is_hidden',
+		'voucher_value',
+		'voucher_fields',
+		// 'is_hidden',
 	];
 
 	// Timely status of the voucher (not_yet, active, expired)
-	public function getStatusAttribute() {
+	public function getStatusAttribute()
+	{
 		$now = Carbon::now();
 		if ($now->lt($this->voucher_start_date)) {
 			return 'not_yet';
@@ -70,7 +73,7 @@ class Voucher extends Model
 		return $this->hasMany(Order::class);
 	}
 	public function voucherRules()
-    {
-        return $this->hasMany(VoucherRule::class, 'voucher_id', 'voucher_id');
-    }
+	{
+		return $this->hasMany(VoucherRule::class, 'voucher_id', 'voucher_id');
+	}
 }

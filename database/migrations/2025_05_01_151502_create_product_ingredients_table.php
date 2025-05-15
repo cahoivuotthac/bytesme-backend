@@ -17,6 +17,8 @@ return new class extends Migration {
 			$table->foreign('product_id')->references('product_id')->on('products')->onDelete('cascade');
 			$table->foreign('ingredient_id')->references('ingredient_id')->on('ingredients')->onDelete('cascade');
 
+			$table->string('amount_used');
+
 			$table->primary(['product_id', 'ingredient_id']); // Composite key
 			$table->timestamps();
 		});

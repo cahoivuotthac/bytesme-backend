@@ -2,12 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\Category;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
 
 class ProductSeeder extends Seeder
@@ -33,25 +31,37 @@ class ProductSeeder extends Seeder
 			// Generate product data
 			$productType = rand(1, 5); // 1: Cake, 2: Pastry, 3: Coffee, 4: Cold Drinks, 5: Desserts
 			$productName = $this->generateProductName($productType);
+			$category = Category::inRandomOrder()->first();
+			$category_id = $category ? $category->category_id : null;
 			$productId = $i;
 
 			// Create product
 			$product = Product::create([
 				'product_id' => $productId,
-				'product_type' => $productType,
 				'product_code' => 'P' . str_pad($i, 4, '0', STR_PAD_LEFT),
 				'product_name' => $productName,
 				'product_description' => $this->generateDescription($productName, $productType),
-				'product_unit_price' => rand(20000, 150000), // Price from 20k to 150k VND
+				'product_sizes_prices' => json_encode([
+					[
+						'size' => 'S',
+						'price' => rand(20000, 150000), // Price from 20k to 150k VND
+					],
+					[
+						'size' => 'M',
+						'price' => rand(30000, 200000), // Price from 30k to 200k VND
+					],
+					[
+						'size' => 'L',
+						'price' => rand(40000, 250000), // Price from 40k to 250k VND
+					]
+				]),
 				'product_discount_percentage' => rand(0, 25), // Discount from 0% to 25%
 				'product_total_orders' => rand(0, 200),
 				'product_total_ratings' => rand(0, 80),
 				'product_overall_stars' => rand(35, 50) / 10, // Rating from 3.5 to 5.0
 				'product_stock_quantity' => rand(10, 100),
+				'category_id' => $category_id, // Assuming category_id corresponds to product type
 			]);
-
-			// Assign random categories
-			// $this->assignCategories($product, $productType);
 
 			// Create 1-4 product images for each product
 			$this->createProductImages($product, $imagesPath, rand(1, 4));
@@ -64,67 +74,6 @@ class ProductSeeder extends Seeder
 
 		$this->command->info('All 20 products have been created successfully!');
 	}
-
-	/**
-	 * Create categories if they don't exist
-	 */
-	// private function createCategories(): void
-	// {
-	// 	$categories = [
-	// 		// Cake categories
-	// 		['name' => 'Bánh sinh nhật', 'type' => 1],
-	// 		['name' => 'Bánh mousse', 'type' => 1],
-	// 		['name' => 'Bánh tiramisu', 'type' => 1],
-	// 		['name' => 'Bánh kem', 'type' => 1],
-	// 		['name' => 'Bánh cheese', 'type' => 1],
-
-	// 		// Pastry categories
-	// 		['name' => 'Bánh mì', 'type' => 2],
-	// 		['name' => 'Bánh ngọt', 'type' => 2],
-	// 		['name' => 'Bánh croissant', 'type' => 2],
-	// 		['name' => 'Bánh cookies', 'type' => 2],
-
-	// 		// Coffee categories
-	// 		['name' => 'Cà phê Việt Nam', 'type' => 3],
-	// 		['name' => 'Cà phê Ý', 'type' => 3],
-	// 		['name' => 'Cà phê đặc biệt', 'type' => 3],
-
-	// 		// Cold drink categories
-	// 		['name' => 'Trà trái cây', 'type' => 4],
-	// 		['name' => 'Sinh tố', 'type' => 4],
-	// 		['name' => 'Đá xay', 'type' => 4],
-	// 		['name' => 'Nước ép', 'type' => 4],
-
-	// 		// Dessert categories
-	// 		['name' => 'Pudding', 'type' => 5],
-	// 		['name' => 'Kem', 'type' => 5],
-	// 		['name' => 'Chè', 'type' => 5],
-	// 	];
-
-	// 	foreach ($categories as $category) {
-	// 		Category::firstOrCreate(
-	// 			['name' => $category['name']],
-	// 			[
-	// 				'category_id' => (string) Str::uuid(),
-	// 				'type' => $category['type'],
-	// 				'slug' => Str::slug($category['name']),
-	// 			]
-	// 		);
-	// 	}
-	// }
-
-	/**
-	 * Assign random categories to product based on type
-	 */
-	// private function assignCategories(Product $product, int $productType): void
-	// {
-	//     // Get categories matching the product type
-	//     $categories = Category::where('type', $productType)->inRandomOrder()->take(rand(1, 2))->get();
-
-	//     foreach ($categories as $category) {
-	//         $product->categories()->attach($category->category_id);
-	//     }
-	// }
 
 	/**
 	 * Create product images referencing placeholder files

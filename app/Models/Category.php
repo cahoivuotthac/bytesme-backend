@@ -14,9 +14,10 @@ use Illuminate\Database\Eloquent\Model;
  * Class Category
  * 
  * @property string $category_id
- * @property string $name
- * @property string|null $background_url
- * @property string|null $description
+ * @property string $category_name
+ * @property int|null $category_type
+ * @property string|null $category_background_url
+ * @property string|null $category_description
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * 
@@ -30,14 +31,17 @@ class Category extends Model
 	protected $primaryKey = 'category_id';
 	public $incrementing = false;
 
-	protected $fillable = [
-		'name',
-		'background_url',
-		'description'
+	protected $casts = [
+		'category_name' => 'string',
+		'category_background_url' => 'string',
+		'category_description' => 'string',
+		'category_type' => 'int',
 	];
 
-	public function product_categories()
-	{
-		return $this->hasMany(ProductCategory::class);
-	}
+	protected $fillable = [
+		'category_name',
+		'category_type',
+		'category_description',
+		'category_background_url',
+	];
 }

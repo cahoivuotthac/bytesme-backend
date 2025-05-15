@@ -14,13 +14,8 @@ class DatabaseSeeder extends Seeder
 	{
 		// Create mock orders
 		$this->call([
-			// VoucherSeeder::class,
-			// OrderSeeder::class,
-			// ProductSeeder::class,
-			// VoucherRuleSeeder::class,
-			// ReturnRefundItemSeeder::class,
-			// ProductFeedbackSeeder::class,
 			UserSeeder::class,
+			CategorySeeder::class, // Run CategorySeeder before ProductSeeder
 			ProductSeeder::class,
 		]);
 	}

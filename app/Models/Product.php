@@ -19,11 +19,13 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $name
  * @property string|null $short_description
  * @property string|null $detailed_description
+ * @property array|null $product_sizes_prices
  * @property int|null $price
  * @property int|null $total_orders
  * @property int|null $total_ratings
  * @property float|null $overall_stars
  * @property int|null $is_returnable
+ * @property int|null $category_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  *
@@ -43,13 +45,13 @@ class Product extends Model
 
 	protected $casts = [
 		'product_type' => 'int',
-		'product_unit_price' => 'int',
 		'product_total_orders' => 'int',
 		'product_total_ratings' => 'int',
 		'product_overall_stars' => 'float',
-		// 'is_returnable' => 'int',
+		'category_id' => 'int',
 		'product_stock_quantity' => 'int',
 		'product_discount_percentage' => 'float',
+		'product_sizes_prices' => 'json',
 	];
 
 	protected $fillable = [
@@ -57,13 +59,13 @@ class Product extends Model
 		'product_code',
 		'product_name',
 		'product_description',
-		'product_unit_price',
+		'product_sizes_prices',
 		'product_discount_percentage',
 		'product_total_orders',
 		'product_total_ratings',
 		'product_overall_stars',
 		'product_stock_quantity',
-		// 'is_returnable',
+		'category_id',
 	];
 
 	public function order_items()
@@ -78,9 +80,14 @@ class Product extends Model
 			->withTimestamps();
 	}
 
-	public function categories()
+	// public function categories()
+	// {
+	// 	return $this->belongsToMany(Category::class, 'product_categories', 'product_id', 'category_id');
+	// }
+
+	public function category()
 	{
-		return $this->belongsToMany(Category::class, 'product_categories', 'product_id', 'category_id');
+		return $this->belongsTo(Category::class, 'category_id', 'category_id');
 	}
 
 	public function product_categories()

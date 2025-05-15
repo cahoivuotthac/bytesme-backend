@@ -34,14 +34,18 @@ class ProductFeedback extends Model
 
 	protected $casts = [
 		'user_id' => 'int',
-		'num_star' => 'int'
+		'product_id' => 'int',
+		'feedback_content' => 'string',
+		'feedback_num_star' => 'int',
+		'feedback_tags' => 'json',
 	];
 
 	protected $fillable = [
-		'product_id',
 		'user_id',
+		'product_id',
 		'feedback_content',
-		'num_star'
+		'feedback_num_star',
+		'feedback_tags',
 	];
 
 	public function product()
