@@ -49,7 +49,7 @@ class AddressController extends Controller
 		$name = trim($name);
 
 		// Convert to lowercase early
-		$name = strtolower($name);
+		$name = mb_strtolower($name, 'UTF-8');
 
 		// Convert Vietnamese characters to ASCII
 		$name = $this->convert_vietnamese_to_latin($name);
