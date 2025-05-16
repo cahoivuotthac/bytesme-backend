@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @property int $cart_id
  * @property int|null $cart_items_count
+ * @property CartItem|null $items
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  *

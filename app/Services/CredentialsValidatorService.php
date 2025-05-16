@@ -19,7 +19,7 @@ class CredentialsValidatorService
 			throw new Exception("email format is invalid");
 		}
 
-		 // not throwing any exception, all good
+		// not throwing any exception, all good
 		return $email;
 	}
 
@@ -38,6 +38,16 @@ class CredentialsValidatorService
 		// password length check
 		if (strlen($password) < 8) {
 			throw new Exception(message: "Mật khẩu phải chứa ít nhất 8 ký tự");
+		}
+
+		// check for number requirement
+		if (!preg_match('/[0-9]/', $password)) {
+			throw new Exception(message: "Mật khẩu phải chứa ít nhất một chữ số");
+		}
+
+		// check for character requirement
+		if (!preg_match('/[a-zA-Z]/', $password)) {
+			throw new Exception(message: "Mật khẩu phải chứa ít nhất một ký tự chữ cái");
 		}
 
 		// not throwing any exception, all good

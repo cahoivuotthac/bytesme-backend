@@ -12,8 +12,8 @@ use Illuminate\Database\Eloquent\Model;
  * Class VoucherRule
  *
  * @property int $rule_id
- * @property string|null $rule_type
- * @property string|null $rule_value
+ * @property string|null $voucher_rule_type
+ * @property string|null $voucher_rule_value
  * @property int $voucher_id
  *
  * @property Voucher $voucher
@@ -27,12 +27,14 @@ class VoucherRule extends Model
 	public $timestamps = false;
 
 	protected $casts = [
-		'voucher_id' => 'int'
+		'voucher_id' => 'int',
+		'voucher_rule_value' => 'string',
+		'voucher_rule_type' => 'string',
 	];
 
 	protected $fillable = [
-		'rule_type',
-		'rule_value',
+		'voucher_rule_type',
+		'voucher_rule_value',
 		'voucher_id'
 	];
 

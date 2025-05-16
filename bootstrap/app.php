@@ -19,12 +19,12 @@ return Application::configure(basePath: dirname(__DIR__))
 		]);
 
 		// Configure API middleware group
-		$middleware->group('api', [
+		$middleware->group('api', middleware: [
 			EnsureFrontendRequestsAreStateful::class,
 			\Illuminate\Routing\Middleware\ThrottleRequests::class . ':api',
 			\Illuminate\Routing\Middleware\SubstituteBindings::class,
 		]);
 	})
-	->withExceptions(function (Exceptions $exceptions) {
+	->withExceptions(function (Exceptions $exceptions): void {
 		//
 	})->create();

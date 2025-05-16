@@ -16,9 +16,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory; // Add this
  * 
  * @property int $order_items_id
  * @property int|null $order_id
- * @property string|null $product_id
- * @property int|null $quantity
- * @property int|null $total_price
+ * @property int|null $product_id
+ * @property int|null $order_items_quantity
+ * @property int|null $order_items_discounted_amount
+ * @property int|null $order_items_unitprice
+ * @property string|null $order_items_size
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * 
@@ -37,17 +39,20 @@ class OrderItem extends Model
 
 	protected $casts = [
 		'order_id' => 'int',
-		'quantity' => 'int',
-		'total_price' => 'int',
-		'discounted_amount' => 'int'
+		 'product_id' => 'int',
+		'order_items_quantity' => 'int',
+		'order_items_discounted_amount' => 'int',
+		'order_items_unitprice' => 'int',
+		'order_items_size' => 'string',
 	];
 
 	protected $fillable = [
 		'order_id',
 		'product_id',
-		'quantity',
-		'total_price',
-		'discounted_amount'
+		'order_items_quantity',
+		'order_items_discounted_amount',
+		'order_items_size',
+		'order_items_unitprice',
 	];
 
 	public function order()

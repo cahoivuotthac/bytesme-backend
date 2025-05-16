@@ -3,6 +3,7 @@
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
@@ -164,5 +165,11 @@ Route::prefix('info')->group(function () {
 		});
 		Route::get('/reverse-geocode', [AddressController::class, "reverse_geocode"]);
 	});
+});
+
+Route::prefix('voucher')->middleware(['auth:sanctum'])->group(function () {
+	Route::get('/', [VoucherController::class, 'getVouchers']);
+	// Route::post('/apply', action: [UserController::class, 'applyVoucher']);
+	// Route::post('/remove', [UserController::class, 'removeVoucher']);
 });
 

@@ -115,7 +115,8 @@ class CartController extends Controller
 			try {
 				$validatedData = $request->validate([
 					'product_id' => 'required|integer',
-					'quantity' => 'integer|min:1'
+					'quantity' => 'integer|min:1',
+					'selected_size' => 'required|string|max:255',
 				]);
 			} catch (Exception $e) {
 				return response()->json([
@@ -159,6 +160,29 @@ class CartController extends Controller
 				], 400);
 			}
 
+			// Find selected size and price
+			if ($product->getAttribute('product_sizes_prices')) {
+				$sizes_prices = json_decode($product->getAttribute('product_sizes_prices'), true);
+				$sizes = [];
+				$prices = [];
+
+				foreach ($sizes_prices as $item) {
+					$sizes[] = $item['size'];
+					$prices[] = $item['price'];
+				}
+
+				$selectedIndex = array_search($validatedData['selected_size'], $sizes);
+				if ($selectedIndex === false) {
+					return response()->json([
+						'success' => false,
+						'message' => 'Size is not available for this product'
+					], 400);
+				}
+				$selectedPrice = $prices[$selectedIndex];
+			} else {
+				$selectedPrice = $product->price;
+			}
+
 			if ($cartItem) {
 				$cartItem->update([
 					'cart_items_quantity' => $newQuantity
@@ -168,7 +192,9 @@ class CartController extends Controller
 				CartItem::create([
 					'cart_id' => $cart->cart_id,
 					'product_id' => $productId,
-					'cart_items_quantity' => $newQuantity
+					'cart_items_quantity' => $newQuantity,
+					'cart_items_unitprice' => $selectedPrice,
+					'cart_items_size' => $validatedData['selected_size']
 				]);
 			}
 

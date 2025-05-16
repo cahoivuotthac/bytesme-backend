@@ -14,12 +14,14 @@ use Illuminate\Database\Eloquent\Model;
  * Class Voucher
  * 
  * @property int $voucher_id
- * @property string|null $voucher_name
- * @property string|null $voucher_type
- * @property string|null $description
- * @property Carbon|null $voucher_start_date
- * @property Carbon|null $voucher_end_date
- * @property int|null $value
+ * @property string $voucher_name
+ * @property string $voucher_description
+ * @property string $voucher_fields
+ * @property Carbon $voucher_start_date
+ * @property Carbon $voucher_end_date
+ * @property string $voucher_type
+ * @property string $voucher_code
+ * @property int $voucher_value
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * 
@@ -34,28 +36,32 @@ class Voucher extends Model
 
 	protected $casts = [
 		'voucher_id' => 'int',
-		'voucher_type' => 'string',
-		'voucher_fields' => 'string',
 		'voucher_name' => 'string',
 		'voucher_description' => 'string',
+		'voucher_fields' => 'json', // Changed to json since it's a text field that likely stores structured data
+		'voucher_code' => 'string',
 		'voucher_start_date' => 'datetime',
 		'voucher_end_date' => 'datetime',
-		'voucher_value' => 'int',
-		// 'is_hidden' => 'int',
+		'voucher_type' => 'string', // Enum type: percentage, cash, gift_product
+		'voucher_value' => 'int'
 	];
 
 	protected $fillable = [
 		'voucher_name',
-		'voucher_type', // percentage or cash
 		'voucher_description',
+		'voucher_fields',
+		'voucher_code',
 		'voucher_start_date',
 		'voucher_end_date',
-		'voucher_value',
-		'voucher_fields',
-		// 'is_hidden',
+		'voucher_type',
+		'voucher_value'
 	];
 
-	// Timely status of the voucher (not_yet, active, expired)
+	/**
+	 * Get the current status of the voucher based on dates.
+	 * 
+	 * @return string
+	 */
 	public function getStatusAttribute()
 	{
 		$now = Carbon::now();
@@ -68,10 +74,17 @@ class Voucher extends Model
 		return 'active';
 	}
 
+	/**
+	 * Get the orders associated with this voucher.
+	 */
 	public function orders()
 	{
-		return $this->hasMany(Order::class);
+		return $this->hasMany(Order::class, 'voucher_id', 'voucher_id');
 	}
+
+	/**
+	 * Get the rules associated with this voucher.
+	 */
 	public function voucherRules()
 	{
 		return $this->hasMany(VoucherRule::class, 'voucher_id', 'voucher_id');
