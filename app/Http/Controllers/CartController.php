@@ -29,27 +29,33 @@ class CartController extends Controller
 						'user_id' => $user_id,
 						'product_id' => $cartItem->product_id
 					])->exists();
+					$cartItem->product->product_unit_price = [
+						'sizes' => $cartItem->product->sizes,
+						'prices' => $cartItem->product->prices,
+					];
+					$cartItem->discounted_unitprice = $cartItem->getDiscountedUnitPriceAttribute();
+
 					return $cartItem;
 				});
 
-			$inStockItems = CartItem::with(['product'])
-				->whereHas('product', function ($query) {
-					$query->where('product_stock_quantity', '>', 0);
-				})
-				->where('cart_id', $cartId)
-				->get();
+			// $inStockItems = CartItem::with(['product'])
+			// 	->whereHas('product', function ($query) {
+			// 		$query->where('product_stock_quantity', '>', 0);
+			// 	})
+			// 	->where('cart_id', $cartId)
+			// 	->get();
 
-			$totalDiscountedPrice = $inStockItems->sum('discounted_price');
-			$totalQuantity = $inStockItems->sum('quantity');
-			$totalPrice = $inStockItems->sum('original_price');
-			$totalDiscountAmount = $inStockItems->sum('discount_amount');
-			return response()->json([
+			// $totalDiscountedPrice = $inStockItems->sum('discounted_price');
+			// $totalQuantity = $inStockItems->sum('quantity');
+			// $totalPrice = $inStockItems->sum('original_price');
+			// $totalDiscountAmount = $inStockItems->sum('discount_amount');
+			return response()->json(data: [
 				'cartItems' => $cartItems,
-				'instockCartItems' => $inStockItems,
-				'totalPrice' => $totalPrice,
-				'totalDiscountAmount' => $totalDiscountAmount,
-				'totalDiscountedPrice' => $totalDiscountedPrice,
-				'totalQuantity' => $totalQuantity
+				// 'instockCartItems' => $inStockItems,
+				// 'totalPrice' => $totalPrice,
+				// 'totalDiscountAmount' => $totalDiscountAmount,
+				// 'totalDiscountedPrice' => $totalDiscountedPrice,
+				// 'totalQuantity' => $totalQuantity
 			]);
 		} catch (Exception $e) {
 			Log::error('Failed to fetch cart items', [
@@ -161,28 +167,23 @@ class CartController extends Controller
 			}
 
 			// Find selected size and price
-			if ($product->getAttribute('product_sizes_prices')) {
-				$sizes_prices = json_decode($product->getAttribute('product_sizes_prices'), true);
-				$sizes = [];
-				$prices = [];
+			$sizes = $product->sizes;
+			$prices = $product->prices;
+			Log::debug('Product sizes and prices:', [
+				'sizes' => $sizes,
+				'prices' => $prices
+			]);
 
-				foreach ($sizes_prices as $item) {
-					$sizes[] = $item['size'];
-					$prices[] = $item['price'];
-				}
-
-				$selectedIndex = array_search($validatedData['selected_size'], $sizes);
-				if ($selectedIndex === false) {
-					return response()->json([
-						'success' => false,
-						'message' => 'Size is not available for this product'
-					], 400);
-				}
-				$selectedPrice = $prices[$selectedIndex];
-			} else {
-				$selectedPrice = $product->price;
+			$selectedIndex = array_search($validatedData['selected_size'], $sizes);
+			if ($selectedIndex === false) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Size is not available for this product'
+				], 400);
 			}
+			$selectedPrice = $prices[$selectedIndex];
 
+			// Upsert cart item
 			if ($cartItem) {
 				$cartItem->update([
 					'cart_items_quantity' => $newQuantity
@@ -411,20 +412,17 @@ class CartController extends Controller
 
 			if ($cartItem) {
 				// Check if the product has size options
-				if ($cartItem->product->product_prices_sizes) {
-					Log::debug('Product has size options', ['product_id' => $productId]);
-					$sizes = $cartItem->product->product_prices_sizes->sizes;
-					$selectedIndex = array_search($size, $sizes);
-					if ($selectedIndex === false) {
-						return response()->json([
-							'success' => false,
-							'message' => 'Size is not available for this product'
-						], 400);
-					}
-					$selectedPrice = $cartItem->product->product_prices_sizes->prices[$selectedIndex];
-					$cartItem->cart_items_unitprice = $selectedPrice;
-					$cartItem->cart_items_size = $size;
+				$sizes = $cartItem->product->sizes;
+				$selectedIndex = array_search($size, $sizes);
+				if ($selectedIndex === false) {
+					return response()->json([
+						'success' => false,
+						'message' => 'Size is not available for this product'
+					], 400);
 				}
+				$prices = $cartItem->product->prices;
+				$selectedPrice = $cartItem->product->prices[$selectedIndex];
+				$cartItem->cart_items_unitprice = $selectedPrice;
 				$cartItem->cart_items_size = $size;
 				$cartItem->save();
 

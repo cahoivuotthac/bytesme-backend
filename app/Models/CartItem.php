@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property Carbon|null $updated_at
  * @property int $original_price
  * @property float $discount_amount
- * @property float $discounted_price
+ * @property float $discounted_unitprice
  * @package App\Models
  */
 class CartItem extends Model
@@ -72,9 +72,13 @@ class CartItem extends Model
 	{
 		return ($this->getRelation('product')->discount_percentage / 100) * $this->original_price;
 	}
-	public function getDiscountedPriceAttribute()
+	public function getDiscountedUnitPriceAttribute()
 	{
-		return $this->original_price - $this->discount_amount;
+		$discountPercentage = $this->getRelation('product')->product_discount_percentage;
+		if (!$discountPercentage || $discountPercentage <= 0) {
+			return null;
+		}
+		return ceil($this->cart_items_unitprice * (100 - $discountPercentage) / 100);
 	}
 
 	// Override the default save query to handle composite keys

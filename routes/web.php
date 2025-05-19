@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +11,9 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\WishlistController;
+use App\Http\Controllers\NotificationController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 /**
  * @notice Auth routes
@@ -82,6 +86,28 @@ Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
 	});
 
 	Route::post('/update-address', [UserController::class, 'updateAddress']);
+});
+
+Route::prefix('order')->middleware(['auth:sanctum'])->group(function () {
+	Route::post('/place', [OrderController::class, 'placeOrder']);
+	Route::get('/details', [OrderController::class, 'getOrderDetails']);
+	Route::get('/', [OrderController::class, 'getOrders']);
+	Route::post('/update-status', [OrderController::class, 'updateOrderStatus']);
+
+	// Notification routes
+	Route::prefix('notifications')->group(function () {
+		// Get all notifications for the authenticated user
+		Route::get('/', [NotificationController::class, 'getNotifications']);
+
+		// Get a specific notification by ID
+		Route::get('/{id}', [NotificationController::class, 'getNotificationById']);
+
+		// Mark notifications as read
+		Route::post('/mark-as-read', [NotificationController::class, 'markAsRead']);
+
+		// Delete notifications
+		Route::delete('/', [NotificationController::class, 'deleteNotifications']);
+	});
 });
 
 Route::prefix('info')->group(function () {
@@ -169,6 +195,7 @@ Route::prefix('info')->group(function () {
 
 Route::prefix('voucher')->middleware(['auth:sanctum'])->group(function () {
 	Route::get('/', [VoucherController::class, 'getVouchers']);
+	Route::get('/gift-products', [VoucherController::class, 'getVoucherGiftProducts']);
 	// Route::post('/apply', action: [UserController::class, 'applyVoucher']);
 	// Route::post('/remove', [UserController::class, 'removeVoucher']);
 });

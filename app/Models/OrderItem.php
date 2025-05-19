@@ -26,7 +26,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory; // Add this
  * 
  * @property Order|null $order
  * @property Product|null $product
- * @property Collection|ReturnRefundItem[] $return_refund_items
  *
  * @package App\Models
  */
@@ -39,7 +38,7 @@ class OrderItem extends Model
 
 	protected $casts = [
 		'order_id' => 'int',
-		 'product_id' => 'int',
+		'product_id' => 'int',
 		'order_items_quantity' => 'int',
 		'order_items_discounted_amount' => 'int',
 		'order_items_unitprice' => 'int',
@@ -65,8 +64,8 @@ class OrderItem extends Model
 		return $this->belongsTo(Product::class, 'product_id', 'product_id');
 	}
 
-	public function return_refund_items()
-	{
-		return $this->hasMany(ReturnRefundItem::class, 'order_items_id');
-	}
+	// public function return_refund_items()
+	// {
+	// 	return $this->hasMany(ReturnRefundItem::class, 'order_items_id');
+	// }
 }

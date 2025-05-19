@@ -113,4 +113,9 @@ class User extends Authenticatable
 			'product_id'   // Foreign key on the pivot table referencing the product
 		);
 	}
+
+	public function user_addresses()
+	{
+		return $this->hasMany(UserAddress::class, 'user_id', 'user_id');
+	}
 }

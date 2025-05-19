@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class UserAddresses extends Model
+class UserAddress extends Model
 {
 	protected $table = 'user_addresses';
 	protected $primaryKey = 'user_address_id';
@@ -21,4 +21,5 @@ class UserAddresses extends Model
 		'is_default_address',
 		'user_id',
 	];
-};
+}
+;

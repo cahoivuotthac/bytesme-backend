@@ -9,6 +9,8 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Log;
 
 /**
  * Class Product
@@ -24,6 +26,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $total_orders
  * @property int|null $total_ratings
  * @property float|null $overall_stars
+ * @property string $product_unit_price
  * @property int|null $is_returnable
  * @property int|null $category_id
  * @property Carbon|null $created_at
@@ -51,7 +54,7 @@ class Product extends Model
 		'category_id' => 'int',
 		'product_stock_quantity' => 'int',
 		'product_discount_percentage' => 'float',
-		'product_sizes_prices' => 'json',
+		'product_unit_price' => 'array',
 	];
 
 	protected $fillable = [
@@ -119,6 +122,30 @@ class Product extends Model
 	{
 		return $this->order_items->sum('quantity');
 	}
+
+	public function sizes(): Attribute
+	{
+		return Attribute::make(
+			get: function (mixed $value, array $attributes) {
+				$sizesPrices = json_decode($attributes['product_unit_price'], true);
+				$sizes = explode('|', $sizesPrices['sizes']);
+				return $sizes;
+			}
+		);
+	}
+
+	public function prices(): Attribute
+	{
+		return Attribute::make(
+			get: function (mixed $value, array $attributes) {
+				$sizesPrices = json_decode($attributes['product_unit_price'], true);
+				$prices = explode('|', $sizesPrices['prices']);
+				$prices = array_map('intval', $prices);
+				return $prices;
+			}
+		);
+	}
+
 
 	public function getClaimsDurationDays()
 	{

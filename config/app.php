@@ -148,12 +148,25 @@ return [
 		 */
 		App\Providers\AppServiceProvider::class,
 		App\Providers\RouteServiceProvider::class,
-		// App\Providers\BroadcastServiceProvider::class,
-		// App\Providers\EventServiceProvider::class,
+		App\Providers\BroadcastServiceProvider::class,
+		App\Providers\EventServiceProvider::class,
 		App\Providers\DBConnServiceProvider::class,
 		// App\Providers\OrderServiceProvider::class,
 		// App\Providers\FeedbackServiceProvider::class,
 		// Reliese\Coders\CodersServiceProvider::class
 	])->toArray(),
 
+	/*
+		  |--------------------------------------------------------------------------
+		  | Class Aliases
+		  |--------------------------------------------------------------------------
+		  |
+		  | The class aliases listed here will be registered when the application
+		  | is started. Feel free to add your own aliases as long as they don't
+		  | conflict with any of the existing aliases in the container.
+		  |
+		  */
+	'aliases' => [
+		'Constants' => App\Constants::class,
+	]
 ];

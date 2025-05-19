@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\UserAddresses;
+use App\Models\UserAddress;
 use Exception;
 use Illuminate\Http\Request;
 use App\Models\User;
@@ -98,7 +98,7 @@ class UserController extends Controller
 		$isDefaultAddress = $validatedData['is_default_address'] ?? false;
 		$userId = Auth::user()->user_id;
 
-		UserAddresses::create([
+		UserAddress::create([
 			'urban_name' => $urbanName,
 			'suburb_name' => $suburbName,
 			'quarter_name' => $quarterName,
@@ -116,7 +116,7 @@ class UserController extends Controller
 	{
 		$userId = Auth::user()->user_id;
 
-		$addresses = UserAddresses::where('user_id', $userId)->get();
+		$addresses = UserAddress::where('user_id', $userId)->get();
 
 		return response()->json([
 			'addresses' => $addresses,
