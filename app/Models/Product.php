@@ -55,6 +55,7 @@ class Product extends Model
 		'product_stock_quantity' => 'int',
 		'product_discount_percentage' => 'float',
 		'product_unit_price' => 'array',
+		'product_band' => 'string',
 	];
 
 	protected $fillable = [
@@ -68,6 +69,7 @@ class Product extends Model
 		'product_total_ratings',
 		'product_overall_stars',
 		'product_stock_quantity',
+		'product_band',
 		'category_id',
 	];
 

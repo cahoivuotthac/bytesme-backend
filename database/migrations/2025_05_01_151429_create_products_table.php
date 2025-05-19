@@ -15,7 +15,8 @@ return new class extends Migration {
 			$table->string('product_code');
 			$table->string('product_name');
 			$table->json('product_unit_price');
-			$table->longText('product_description')->nullable();
+			$table->longText('product_description');
+			$table->string('product_band', 50)->nullable();
 			$table->float('product_discount_percentage')->default(0);
 			$table->integer('product_total_orders')->default(0);
 			$table->integer('product_total_ratings')->default(0);
