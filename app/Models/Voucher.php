@@ -43,7 +43,7 @@ class Voucher extends Model
 		'voucher_start_date' => 'datetime',
 		'voucher_end_date' => 'datetime',
 		'voucher_type' => 'string', // Enum type: percentage, cash, gift_product
-		'voucher_value' => 'int'
+		'voucher_value' => 'string'
 	];
 
 	protected $fillable = [
