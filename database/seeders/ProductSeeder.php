@@ -41,20 +41,15 @@ class ProductSeeder extends Seeder
 				'product_code' => 'P' . str_pad($i, 4, '0', STR_PAD_LEFT),
 				'product_name' => $productName,
 				'product_description' => $this->generateDescription($productName, $productType),
-				'product_sizes_prices' => json_encode([
-					[
-						'size' => 'S',
-						'price' => rand(20000, 150000), // Price from 20k to 150k VND
-					],
-					[
-						'size' => 'M',
-						'price' => rand(30000, 200000), // Price from 30k to 200k VND
-					],
-					[
-						'size' => 'L',
-						'price' => rand(40000, 250000), // Price from 40k to 250k VND
-					]
-				]),
+				'product_unit_price' => [
+					'sizes' => 'S|M|L',
+					'prices' => implode('|', [
+						rand(20000, 150000),
+						rand(40000, 250000),
+						rand(30000, 200000),
+					]), // Price from 20k to 150k VND
+				]
+				,
 				'product_discount_percentage' => rand(0, 25), // Discount from 0% to 25%
 				'product_total_orders' => rand(0, 200),
 				'product_total_ratings' => rand(0, 80),

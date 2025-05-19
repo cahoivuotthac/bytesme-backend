@@ -33,8 +33,8 @@ class VoucherRuleSeeder extends Seeder
 			],
 			'NOEL24' => [
 				[
-					'voucher_rule_type' => 'day_restriction',
-					'voucher_rule_value' => '6,0'  // Weekend only
+					'voucher_rule_type' => 'remaining_quantity',
+					'voucher_rule_value' => '150',
 				]
 			],
 			'FREESHIP300' => [
@@ -49,15 +49,21 @@ class VoucherRuleSeeder extends Seeder
 			],
 			'BOGO2025' => [
 				[
-					'voucher_rule_type' => 'product_restriction',
-					'voucher_rule_value' => '1,5,9,13'
+					'voucher_rule_type' => 'product_id',
+					'voucher_rule_value' => '3:2'
+				],
+			],
+			'B2G1party' => [
+				[
+					'voucher_rule_type' => 'min_bill_price',
+					'voucher_rule_value' => '200000'
 				],
 				[
-					'voucher_rule_type' => 'gift_product',
-					'voucher_rule_value' => '15'
+					'voucher_rule_type' => 'product_id',
+					'voucher_rule_value' => '1:2,5:2' // 1:2 means buy 2 of product 1, get 1 free, 5:2 means buy 2 of product 5, get 1 free
 				]
 			],
-			
+
 			// Mock vouchers rules
 			'SNHAT-BYTESME' => [
 				[
@@ -108,10 +114,10 @@ class VoucherRuleSeeder extends Seeder
 					'voucher_rule_type' => 'max_discount',
 					'voucher_rule_value' => '45000'
 				],
-				[
-					'voucher_rule_type' => 'day_restriction',
-					'voucher_rule_value' => '6,0'  // Weekend only
-				]
+				// [
+				// 	'voucher_rule_type' => 'day_restriction',
+				// 	'voucher_rule_value' => '6,0'  // Weekend only
+				// ]
 			],
 			'JULY-SALE15K' => [
 				[
@@ -161,7 +167,7 @@ class VoucherRuleSeeder extends Seeder
 					'voucher_rule_value' => '150000'
 				],
 				[
-					'voucher_rule_type' => 'category_restriction',
+					'voucher_rule_type' => 'category_id',
 					'voucher_rule_value' => '2,3' // Must include items from Pastry and Coffee
 				]
 			],
@@ -189,7 +195,7 @@ class VoucherRuleSeeder extends Seeder
 				}
 			}
 		}
-		
+
 		$this->command->info('Voucher rules seeded successfully!');
 	}
 }
