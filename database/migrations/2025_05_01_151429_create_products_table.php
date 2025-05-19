@@ -14,7 +14,7 @@ return new class extends Migration {
 			$table->id('product_id');
 			$table->string('product_code');
 			$table->string('product_name');
-			$table->json('product_sizes_prices');
+			$table->json('product_unit_price');
 			$table->longText('product_description')->nullable();
 			$table->float('product_discount_percentage')->default(0);
 			$table->integer('product_total_orders')->default(0);

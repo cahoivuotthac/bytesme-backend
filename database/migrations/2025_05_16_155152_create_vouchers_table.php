@@ -19,7 +19,7 @@ return new class extends Migration {
 			$table->timestamp('voucher_start_date');
 			$table->timestamp('voucher_end_date');
 			$table->enum('voucher_type', ['percentage', 'cash', 'gift_product']);
-			$table->integer('voucher_value');
+			$table->text('voucher_value');
 			$table->timestamps();
 		});
 	}

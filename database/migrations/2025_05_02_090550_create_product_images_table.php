@@ -14,7 +14,7 @@ return new class extends Migration {
 			$table->id('product_image_id');
 			$table->unsignedBigInteger('product_id');
 			$table->string('product_image_name')->nullable();
-			$table->string('product_image')->nullable();
+			$table->binary('product_image')->nullable();
 			$table->string('product_image_url')->nullable();
 			$table->integer('image_type')->nullable();
 			$table->timestamps();

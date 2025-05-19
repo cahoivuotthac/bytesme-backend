@@ -26,6 +26,7 @@ return new class extends Migration {
             $table->boolean('order_is_paid')->default(false);
             $table->enum('order_status', ['pending', 'delivering', 'delivered', 'cancelled'])->default('pending');
             $table->text('order_additional_note')->nullable();
+			$table->text('order_addtional_note')->nullable();
 
             $table->timestamps();
 
