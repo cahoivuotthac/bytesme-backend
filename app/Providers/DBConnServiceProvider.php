@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use mysqli;
+use PDO;
 
 class DBConnService
 {
@@ -29,27 +29,27 @@ class DBConnService
 
 	public function __construct()
 	{
-		$host = config(key: 'database.connections.mysql.host');
-		$port = config('database.connections.mysql.port');
-		$username = config('database.connections.mysql.username');
-		$password = config('database.connections.mysql.password');
-		$database = config('database.connections.mysql.database');
+		$host = config('database.connections.pgsql.host');
+		$port = config('database.connections.pgsql.port');
+		$username = config('database.connections.pgsql.username');
+		$password = config('database.connections.pgsql.password');
+		$database = config('database.connections.pgsql.database');
 
-		$this->conn = new mysqli(
-			$host,
-			$username,
-			$password,
-			$database,
-			$port
-		);
-
-		if ($this->conn->connect_error) {
-			die("DB Connection failed due to error: " . $this->conn->connect_error);
+		try {
+			$dsn = "pgsql:host=$host;port=$port;dbname=$database;";
+			$this->conn = new PDO(
+				$dsn,
+				$username,
+				$password,
+				[PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+			);
+		} catch (\PDOException $e) {
+			die("DB Connection failed due to error: " . $e->getMessage());
 		}
 	}
 
 	// instance-level func.
-	public function getDBConn(): mysqli
+	public function getDBConn(): PDO
 	{
 		return $this->conn;
 	}

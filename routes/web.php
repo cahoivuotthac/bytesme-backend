@@ -10,6 +10,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OTPController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\WishlistController;
+use App\Http\Controllers\AdminAuthController;
 
 /**
  * @notice Auth routes
@@ -173,3 +174,5 @@ Route::prefix('voucher')->middleware(['auth:sanctum'])->group(function () {
 	// Route::post('/remove', [UserController::class, 'removeVoucher']);
 });
 
+Route::get('/admin/login', [AdminAuthController::class, 'showAdminLoginForm'])->name('admin.login');
+Route::post('/admin/login', [AdminAuthController::class, 'handleAdminLogin'])->name('admin.login.submit');
