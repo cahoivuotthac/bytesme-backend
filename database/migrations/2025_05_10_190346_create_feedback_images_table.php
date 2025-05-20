@@ -12,7 +12,7 @@ return new class extends Migration {
 	{
 		Schema::create('feedback_images', function (Blueprint $table) {
 			$table->id('feedback_image_id');
-			$table->foreignId('product_feedback_id')->constrained('product_feedbacks', 'product_feedback_id')->onDelete('cascade');
+			$table->foreignId('order_feedback_id')->constrained('order_feedbacks', 'order_feedback_id')->onDelete('cascade');
 			$table->longText('feedback_image');
 			$table->timestamps();
 		});
