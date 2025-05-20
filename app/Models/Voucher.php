@@ -31,7 +31,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Voucher extends Model
 {
-	protected $table = 'vouchers';
+	protected $table = 'app_data.vouchers';
 	protected $primaryKey = 'voucher_id';
 
 	protected $casts = [

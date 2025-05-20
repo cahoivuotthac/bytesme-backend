@@ -10,7 +10,7 @@ return new class extends Migration {
 	 */
 	public function up(): void
 	{
-		Schema::create('vouchers', function (Blueprint $table) {
+		Schema::create('app_data.vouchers', function (Blueprint $table) {
 			$table->id('voucher_id');
 			$table->string('voucher_name', 50);
 			$table->string('voucher_code', 50)->unique();
@@ -29,6 +29,6 @@ return new class extends Migration {
 	 */
 	public function down(): void
 	{
-		Schema::dropIfExists('vouchers');
+		Schema::dropIfExists('app_data.vouchers');
 	}
 };
