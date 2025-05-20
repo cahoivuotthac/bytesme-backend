@@ -28,6 +28,8 @@ class Cart extends Model
 	protected $table = 'carts';
 	protected $primaryKey = 'cart_id';
 
+	public $incrementing = true;
+
 	protected $casts = [
 		'cart_items_count' => 'int'
 	];
