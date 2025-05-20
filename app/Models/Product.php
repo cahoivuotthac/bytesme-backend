@@ -10,7 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Class Product
@@ -54,7 +54,7 @@ class Product extends Model
 		'category_id' => 'int',
 		'product_stock_quantity' => 'int',
 		'product_discount_percentage' => 'float',
-		'product_unit_price' => 'array',
+		'product_unit_price' => 'json',
 		'product_band' => 'string',
 	];
 
@@ -130,7 +130,7 @@ class Product extends Model
 		return Attribute::make(
 			get: function (mixed $value, array $attributes) {
 				$sizesPrices = json_decode($attributes['product_unit_price'], true);
-				$sizes = explode('|', $sizesPrices['sizes']);
+				$sizes = explode('|', $sizesPrices['product_sizes']);
 				return $sizes;
 			}
 		);
@@ -141,7 +141,9 @@ class Product extends Model
 		return Attribute::make(
 			get: function (mixed $value, array $attributes) {
 				$sizesPrices = json_decode($attributes['product_unit_price'], true);
-				$prices = explode('|', $sizesPrices['prices']);
+				Log::debug('SizesPrices in prices function: ', $sizesPrices);
+				$prices = explode('|', $sizesPrices['product_prices']);
+				Log::debug("Splitted prices: ", $prices);
 				$prices = array_map('intval', $prices);
 				return $prices;
 			}
