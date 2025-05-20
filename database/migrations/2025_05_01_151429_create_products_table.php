@@ -12,12 +12,13 @@ return new class extends Migration {
 	{
 		Schema::create('products', function (Blueprint $table) {
 			$table->id('product_id');
+			$table->foreignId('category_id')->constrained('categories', 'category_id')->onDelete('cascade');
 			$table->string('product_code');
 			$table->string('product_name');
-			$table->json('product_unit_price');
 			$table->longText('product_description');
 			$table->string('product_band', 50)->nullable();
 			$table->float('product_discount_percentage')->default(0);
+			$table->json('product_unit_price');
 			$table->integer('product_total_orders')->default(0);
 			$table->integer('product_total_ratings')->default(0);
 			$table->float('product_overall_stars')->default(0);
@@ -25,7 +26,6 @@ return new class extends Migration {
 			$table->timestamps();
 
 			// Foreign key constraints
-			$table->foreignId('category_id')->constrained('categories', 'category_id')->onDelete('cascade');
 		});
 	}
 
