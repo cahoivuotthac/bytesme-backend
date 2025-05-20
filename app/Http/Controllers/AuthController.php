@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use DB;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\PasswordResets;
@@ -14,6 +13,7 @@ use Auth;
 use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 use App\Services\CredentialsValidatorService;
+use Illuminate\Support\Facades\DB;
 
 class AuthUtils
 {
@@ -55,7 +55,7 @@ class AuthController extends Controller
 {
 	protected CredentialsValidatorService $credentialsValidatorService;
 
-	public function __construct(CredentialsValidatorService $credentialsValidatorService) 
+	public function __construct(CredentialsValidatorService $credentialsValidatorService)
 	{
 		$this->credentialsValidatorService = $credentialsValidatorService;
 	}
@@ -167,15 +167,20 @@ class AuthController extends Controller
 		$user = null;
 		try {
 			DB::beginTransaction();
-			$cart = Cart::create();
-			$user = User::create(attributes: [
+			$user = User::create([
 				'phone_number' => $phone_number,
 				'name' => !empty($name) ? $name : explode('@', $email)[0],
 				'email' => $email,
 				'password' => $password,
 				'role_type' => 0,
-				'cart_id' => $cart->cart_id,
+				'cart_id' => null,
 			]);
+			Log::debug("user id: " . $user->user_id);
+			$cart = Cart::create([
+
+			]);
+			$user->cart_id = $cart->cart_id;
+			$user->save();
 			$otp->delete();
 			DB::commit();
 
@@ -407,14 +412,14 @@ class AuthController extends Controller
 		try {
 			$username = $request->input('username');
 			$password = $request->input('password');
-			
+
 			// Validate the password
 			$password = $this->credentialsValidatorService->validateAndReturnPassword($password);
 
 			// Find the user with the admin role
 			$user = User::where('user_name', $username)
-						->where('role_type', 1)
-						->first();
+				->where('role_type', 1)
+				->first();
 
 			if (!$user) {
 				Log::debug('User not found or not an admin', [
