@@ -15,10 +15,11 @@ class DatabaseSeeder extends Seeder
 		// Create mock data
 		$this->call([
 			UserSeeder::class,
-			CategorySeeder::class, // Run CategorySeeder before ProductSeeder
-			ProductSeeder::class,
-			VoucherSeeder::class,  // Run VoucherSeeder before VoucherRuleSeeder
-			VoucherRuleSeeder::class,
+				// CategorySeeder::class, // Run CategorySeeder before ProductSeeder
+				// ProductSeeder::class,
+				// VoucherSeeder::class,  // Run VoucherSeeder before VoucherRuleSeeder
+				// VoucherRuleSeeder::class,
+			// OrderSeeder::class,
 		]);
 	}
 }

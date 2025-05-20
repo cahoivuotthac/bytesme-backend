@@ -54,9 +54,11 @@ class Order extends Model
 		'order_deliver_cost' => 'int',
 		'order_total_price' => 'int',
 		'order_payment_date' => 'datetime',
+		'order_payment_method' => 'string',
 		'order_deliver_time' => 'datetime',
 		'order_is_paid' => 'bool',
 		'order_status' => 'string',
+		'order_additional_note' => 'string',
 		'order_deliver_address' => 'string',
 	];
 
@@ -138,6 +140,17 @@ class Order extends Model
 
 		// Listen for when a new order is created
 		static::created(function (Order $order) {
+			// Skip notifications if running in seeder context
+			if (app()->runningInConsole() && app()->runningUnitTests() === false) {
+				// Check if the command is db:seed or migrate:fresh --seed
+				$commands = ['db:seed', 'migrate:fresh', 'migrate:refresh', 'migrate:reset', 'migrate:rollback'];
+				foreach ($commands as $cmd) {
+					if (collect($_SERVER['argv'] ?? [])->contains($cmd)) {
+						return;
+					}
+				}
+			}
+
 			// Notify the user about their new order
 			$user = User::where('user_id', $order->user_id)->first();
 			Log::debug("User #{$user->user_id} found for order #{$order->order_id}");
