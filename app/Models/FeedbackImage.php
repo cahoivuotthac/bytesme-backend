@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * 
- * @property ProductFeedback|null $product_feedback
+ * @property OrderFeedback|null $product_feedback
  *
  * @package App\Models
  */
@@ -28,16 +28,16 @@ class FeedbackImage extends Model
 	protected $primaryKey = 'feedback_image_id';
 
 	protected $casts = [
-		'product_feedback_id' => 'int',
+		'order_feedback_id' => 'int',
 	];
 
 	protected $fillable = [
-		'product_feedback_id',
+		'order_feedback_id',
 		'feedback_image',
 	];
 
-	public function product_feedback()
+	public function order_feedback()
 	{
-		return $this->belongsTo(related: ProductFeedback::class);
+		return $this->belongsTo(related: OrderFeedback::class);
 	}
 }

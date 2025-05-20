@@ -37,7 +37,7 @@ use Laravel\Sanctum\HasApiTokens;
  *
  * @property Cart|null $cart
  * @property Collection|Order[] $orders
- * @property Collection|ProductFeedback[] $product_feedbacks
+ * @property Collection|OrderFeedback[] $product_feedbacks
  *
  * @package App\Models
  */
@@ -93,9 +93,9 @@ class User extends Authenticatable
 		return $this->hasMany(Order::class, 'user_id', 'user_id');
 	}
 
-	public function product_feedbacks()
+	public function order_feedbacks()
 	{
-		return $this->hasMany(ProductFeedback::class, 'user_id', 'user_id');
+		return $this->hasMany(OrderFeedback::class, 'user_id', 'user_id');
 	}
 
 

@@ -35,7 +35,7 @@ use Illuminate\Support\Facades\Log;
  * @property Collection|OrderItem[] $order_items
  * @property Collection|Attribute[] $attributes
  * @property Collection|ProductCategory[] $product_categories
- * @property Collection|ProductFeedback[] $product_feedbacks
+ * @property Collection|OrderFeedback[] $product_feedbacks
  * @property Wishlist $wishlist
  *
  * @package App\Models
@@ -102,7 +102,7 @@ class Product extends Model
 
 	public function product_feedbacks()
 	{
-		return $this->hasMany(ProductFeedback::class, 'product_id', 'product_id');
+		return $this->hasMany(OrderFeedback::class, 'product_id', 'product_id');
 	}
 
 	public function wishlist()
