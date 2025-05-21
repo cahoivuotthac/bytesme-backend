@@ -69,9 +69,6 @@ class OrderController extends Controller
 		// Calculate order subtotal
 		$subtotal = 0;
 		foreach ($cartItems as $item) {
-			// Calculate item discount amount (if any, could be 0 if no discount)
-			// $itemDiscount = ($item->cart_items_quantity * $item->cart_items_unitprice) * $item->product->product_discount_percentage / 100;
-
 			$unitPrice = $item->discounted_unit_price ?? $item->cart_items_unitprice;
 			$itemCost = $unitPrice * $item->cart_items_quantity;
 			$subtotal += $itemCost;
@@ -88,7 +85,7 @@ class OrderController extends Controller
 				'order_payment_method' => $paymentMethodId,
 				'order_status' => 'pending',
 				'order_additional_note' => $additionalNote,
-				'order_deliver_address' => $validatedInput['user_address_id'],
+				'order_deliver_address' => $deliverAddress,
 				'order_payment_date' => null,
 				'order_is_paid' => false,
 				'order_deliver_time' => null,
@@ -147,7 +144,26 @@ class OrderController extends Controller
 		]);
 	}
 
-	protected function applyVoucher($voucher, $order, $orderItems)
+	public function cancelOrder(Request $request)
+	{
+		$validated = $request->validate([
+			'order_id' => 'required|integer'
+		]);
+
+		$orderId = $validated['order_id'];
+		$order = Order::findOrFail($orderId);
+
+		if ($order->order_status !== 'pending') {
+			return response()->json(['message' => 'Cannot cancel order'], 422);
+		}
+
+		$order->order_status = 'cancelled';
+		$order->save();
+
+		return response()->json(['message' => 'Order cancelled successfully']);
+	}
+
+	public static function applyVoucher($voucher, $order, $orderItems): void
 	{
 		// Handle voucher type gift_product specifically
 		if ($voucher->voucher_type === 'gift_product') {
@@ -321,7 +337,7 @@ class OrderController extends Controller
 			}
 
 			$order = Order::with([
-				'order_items.product'
+				'order_items.product.product_images'
 			])->findOrFail($orderId);
 
 			// return response()->json([

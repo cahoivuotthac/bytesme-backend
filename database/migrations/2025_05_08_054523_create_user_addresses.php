@@ -15,8 +15,11 @@ return new class extends Migration {
 
 			// Address details
 			$table->string('urban_name');
+			$table->integer('urban_code');
 			$table->string('suburb_name');
+			$table->integer('suburb_code');
 			$table->string('quarter_name')->nullable();
+			$table->integer('quarter_code')->nullable();
 			$table->string('full_address');
 			$table->boolean('is_default_address')->default(false);
 

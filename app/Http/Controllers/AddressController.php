@@ -239,8 +239,9 @@ class AddressController extends Controller
 
 		try {
 			// Call the Reverse Geocode API
-			$apiKey = env('GEOMAP_API_KEY');
+			$apiKey = config('services.geomap.key');
 			if (!$apiKey) {
+				Log::debug("Missing GEOMAP_API_KEY in server environment");
 				return response()->json(['message' => 'missing server-side configuration'], 500);
 			}
 

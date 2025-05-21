@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Class ProductFeedback
  * 
- * @property int $product_feedback_id
+ * @property int $order_feedback_id
  * @property string|null $product_id
  * @property int|null $user_id
  * @property string|null $feedback_content
@@ -36,14 +36,14 @@ class OrderFeedback extends Model
 		'user_id' => 'int', // nullable (in case of anonymous feedback)
 		'order_id' => 'int',
 		'feedback_content' => 'string',
-		'feedback_num_star' => 'int',
+		'num_star' => 'int',
 	];
 
 	protected $fillable = [
 		'user_id',
 		'product_id',
 		'feedback_content',
-		'feedback_num_star',
+		'num_star',
 		'feedback_tags',
 	];
 

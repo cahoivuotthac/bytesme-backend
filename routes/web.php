@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VoucherController;
@@ -42,6 +43,12 @@ Route::prefix('auth')->group(function () {
 	Route::get('signin/{social}/callback', [AuthController::class, 'handleSocialCallback']);
 });
 
+Route::prefix('user')->middleware('auth:sanctum')->group(function () {
+	Route::put('/profile', [UserController::class, 'updateProfile']);
+	Route::post('/update-password', [UserController::class, 'updatePassword']);
+	Route::post('/update-avatar', [UserController::class, 'updateAvatar']);
+});
+
 Route::prefix('product')->group(function () {
 	Route::get('/homepage-products', [ProductController::class, 'getHomepageProducts']);
 	Route::get('/{id}', function ($id) {
@@ -77,6 +84,7 @@ Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
 	Route::group(['prefix' => 'addresses'], function () {
 		Route::get('/', [UserController::class, 'getUserAddresses']);
 		Route::post('/add', [UserController::class, 'addAddress']);
+		Route::post('/update', [UserController::class, 'updateAddress']);
 		Route::post('/remove', [UserController::class, 'removeAddress']);
 		Route::post('/set-default', [UserController::class, 'setDefaultAddress']);
 	});
@@ -89,9 +97,11 @@ Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
 });
 
 Route::prefix('order')->middleware(['auth:sanctum'])->group(function () {
-	Route::post('/place', [OrderController::class, 'placeOrder']);
-	Route::get('/details', [OrderController::class, 'getOrderDetails']);
 	Route::get('/', [OrderController::class, 'getOrders']);
+	Route::post('/place', [OrderController::class, 'placeOrder']);
+	Route::post('/cancel', [OrderController::class, 'cancelOrder']);
+	Route::post('/feedback', [FeedbackController::class, 'sendFeedback']);
+	Route::get('/details', [OrderController::class, 'getOrderDetails']);
 	Route::post('/update-status', [OrderController::class, 'updateOrderStatus']);
 
 	// Notification routes
@@ -200,3 +210,47 @@ Route::prefix('voucher')->middleware(['auth:sanctum'])->group(function () {
 	// Route::post('/remove', [UserController::class, 'removeVoucher']);
 });
 
+
+Route::middleware('auth:sanctum')->post('/test-broadcast', function (Request $request) {
+	$user = $request->user();
+	broadcast(new \App\Events\OrderStatusEvent('Test message at ' . now(), $user->user_id))->toOthers();
+
+	return response()->json([
+		'success' => true,
+		'message' => 'Test broadcast sent',
+		'user_id' => $user->user_id
+	]);
+});
+
+Route::get('/test-broadcast-public', function () {
+	$data = ['message' => 'This is a test broadcast at ' . now(), 'time' => now()->toIso8601String()];
+
+	// Log that we're attempting to broadcast
+	Log::info('Attempting to broadcast to public channel', $data);
+
+	// Broadcast to public channel
+	broadcast(new \App\Events\OrderStatusEvent($data['message'], 'public-test'));
+
+	return response()->json([
+		'success' => true,
+		'message' => 'Test broadcast sent to public channel',
+		'data' => $data
+	]);
+});
+
+Route::middleware('auth:sanctum')->post('/test-broadcast-private', function (Request $request) {
+	$user = Auth::user();
+	$message = "Private test for user {$user->user_id} at " . now();
+
+	Log::info("Attempting private broadcast for user {$user->user_id}");
+
+	// Note: we're NOT using toOthers() here to make testing easier
+	broadcast(new \App\Events\OrderStatusEvent($message, $user->user_id));
+
+	return response()->json([
+		'success' => true,
+		'message' => 'Private test broadcast sent',
+		'user_id' => $user->user_id,
+		'channel' => "App.Models.User.{$user->user_id}"
+	]);
+});

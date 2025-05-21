@@ -58,6 +58,7 @@ class User extends Authenticatable
 		'cart_id' => 'int',
 		'password' => 'hashed',
 		'remember_token' => 'hashed',
+		'avatar' => 'string',
 	];
 
 	protected $hidden = [
@@ -72,12 +73,8 @@ class User extends Authenticatable
 		'password',
 		'remember_token',
 		'phone_number',
-		'urban',
-		'suburb',
-		'quarter',
-		'address',
-		'gender',
-		'date_of_birth',
+		// 'gender',
+		// 'date_of_birth',
 		'avatar',
 		'cart_id',
 		'phone_verified_at',

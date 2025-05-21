@@ -78,14 +78,14 @@ class VoucherSeeder extends Seeder
 		]);
 
 		Voucher::create([
-			'voucher_name' => 'Mua 2 Donut tặng 1',
+			'voucher_name' => 'Mua 2 tặng 1',
 			'voucher_code' => 'B2G1party',
 			'voucher_type' => 'gift_product',
 			'voucher_fields' => 'shop_related',
-			'voucher_description' => 'Mua 2 Donut bất kỳ, nhận ngay 1 nước ngọt miễn phí',
+			'voucher_description' => 'Mua 2 Donut bất kỳ, nhận ngay 1 donut miễn phí',
 			'voucher_start_date' => now(),
 			'voucher_end_date' => now()->addDays(30),
-			'voucher_value' => '1:1,5:1:M' // 1:1:L means you get 1 unit of size 'L' of product with product_id = 1 for free, and 5:1 means you get 1 unit of sizes 'M' of product with product_id = 5 for free
+			'voucher_value' => '1:1:Standard,5:1:M' // 1:1:L means you get 1 unit of size 'L' of product with product_id = 1 for free, and 5:1 means you get 1 unit of sizes 'M' of product with product_id = 5 for free
 		]);
 
 		// Add mock vouchers with correct fields

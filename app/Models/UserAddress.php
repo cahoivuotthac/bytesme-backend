@@ -15,8 +15,11 @@ class UserAddress extends Model
 
 	protected $fillable = [ //mass-assigned
 		'urban_name',
+		'urban_code',
 		'suburb_name',
+		'suburb_code',
 		'quarter_name',
+		'quarter_code',
 		'full_address',
 		'is_default_address',
 		'user_id',

@@ -290,7 +290,7 @@ class VoucherController extends Controller
 		$products = Product::whereIn('product_id', $giftProductIds)
 			->with([
 				'product_images' => function ($query) {
-					$query->select('product_id', 'product_image', 'product_image_url');
+					$query->select('product_id', 'product_image_url');
 				}
 			])
 			->get(['product_id', 'product_name']);
@@ -310,13 +310,6 @@ class VoucherController extends Controller
 
 				if ($chosenImgObj->product_image_url) {
 					$product->product_image = $chosenImgObj->product_image_url;
-				} else if ($chosenImgObj->product_image) {
-					// Convert binary image to base64
-					$base64Image = base64_encode($chosenImgObj->product_image);
-
-					// Add mime type for data URL
-					$mimeType = 'image/png';
-					$product->product_image = "data:$mimeType;base64,$base64Image";
 				} else {
 					$product->product_image = "https://cdn.shopify.com/s/files/1/0727/6042/6786/files/ICON-02.png?v=1681843319"; // placeholder image
 				}
