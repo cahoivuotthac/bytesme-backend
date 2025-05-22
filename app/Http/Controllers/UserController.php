@@ -59,7 +59,7 @@ class UserController extends Controller
 			$userAddress->is_default_address = $isDefaultAddress;
 			$userAddress->save();
 			if ($isDefaultAddress) {
-				// Set all other addresses to not default
+				// Set all other addresses to non-default
 				UserAddress::where('user_id', $user->user_id)
 					->where('user_address_id', '!=', $userAddressId)
 					->update(['is_default_address' => false]);
@@ -123,15 +123,19 @@ class UserController extends Controller
 		$quarterName = $validatedData['quarter_name'] ?? null;
 		$quarterCode = $validatedData['quarter_code'] ?? null;
 		$fullAddress = $validatedData['full_address'] ?? null;
-		$isDefaultAddress = $validatedData['is_default_address'] ?? false;
+		$isDefaultAddress = $request->input('is_default_address', false);
 		$userId = $user->user_id;
+
+		$otherAddressesQuery = UserAddress::where('user_id', $userId);
 
 		try {
 			DB::beginTransaction();
-			if ($validatedData['is_default_address'] === true) {
-				// Set all other addresses to not default
-				UserAddress::where('user_id', $user->user_id)
-					->update(['is_default_address' => false]);
+			if ($isDefaultAddress) {
+				// Set all other addresses to non-default
+				$otherAddressesQuery->update(['is_default_address' => false]);
+			} else if ($otherAddressesQuery->count() === 0) {
+				// If no other addresses exist, set this one as default
+				$isDefaultAddress = true;
 			}
 			UserAddress::create([
 				'urban_name' => $urbanName,
