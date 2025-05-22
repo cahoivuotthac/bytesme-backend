@@ -14,6 +14,10 @@ Broadcast::channel("orders-status", function () {
 	return true;
 });
 
+Broadcast::channel('online-payment', function() {
+	return true;
+});
+
 // Channel for receiving updates about a specific user's orders
 Broadcast::channel('order.{userId}', function (User $user, $userId) {
 	return (int) $user->user_id === (int) $userId;

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use \App\Models\Wishlist;
-use Log;
+use Illuminate\Support\Facades\Log;
 
 class WishlistController extends Controller
 {

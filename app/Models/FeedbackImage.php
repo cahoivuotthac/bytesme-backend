@@ -29,6 +29,7 @@ class FeedbackImage extends Model
 
 	protected $casts = [
 		'order_feedback_id' => 'int',
+		'feedback_image' => 'string',
 	];
 
 	protected $fillable = [

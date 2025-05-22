@@ -20,9 +20,9 @@ class FeedbackController extends Controller
 				'content' => 'nullable|string|max:255',
 				'rating' => 'required|integer|min:1|max:5',
 				'improve_tags' => 'nullable',
-				'is_anonymous' => 'nullable|string|in:true,false',
-				// 'images' => 'nullable|array|max:3',
-				'images.*' => 'image|max:2048'
+				'is_anofnymous' => 'nullable|string|in:true,alse',
+				'images' => 'nullable|array|max:3',
+				// 'images.*' => 'image|max:2048'
 			]);
 		} catch (\Exception $e) {
 			Log::error('FeedbackController@sendFeedback: validation error: ' . $e->getMessage());
@@ -59,15 +59,13 @@ class FeedbackController extends Controller
 				}
 			}
 
-			// Handle images
-			if ($request->hasFile('images')) {
-				Log::debug('Images: ' . json_encode($request->file('images')));
-				foreach ($request->file('images') as $image) {
-					$imageBinary = file_get_contents($image->getRealPath());
-
+			// Save images if provided
+			$images = $request->input('images', []);
+			if (count($images) > 0) {
+				foreach ($images as $base64Img) {
 					FeedbackImage::create([
 						'order_feedback_id' => $orderFeedback->order_feedback_id,
-						'feedback_image' => $imageBinary,
+						'feedback_image' => $base64Img,
 					]);
 				}
 			}

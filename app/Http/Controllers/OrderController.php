@@ -7,10 +7,12 @@ use App\Constants;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Voucher;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\VoucherController;
+use App\Services\MomoPaymentService;
 
 class OrderController extends Controller
 {
@@ -30,6 +32,7 @@ class OrderController extends Controller
 				'user_address_id' => 'required|integer',
 				'order_additional_note' => 'nullable|string|max:255',
 				'selected_item_ids' => 'string|required',
+				'language' => 'nullable|string|in:en,vi',
 			]);
 
 			if (!in_array($validatedInput['payment_method_id'], Constants::ACCEPTED_PAYMENT_METHODS)) {
@@ -42,10 +45,10 @@ class OrderController extends Controller
 
 		// Select validated input
 		$paymentMethodId = $validatedInput['payment_method_id'];
-		$orderDeliverCost = 20000; // hard-code for now
 		$userAddressId = $validatedInput['user_address_id'];
 		$additionalNote = $validatedInput['order_additional_note'] ?? null;
 		$voucherCode = $validatedInput['voucher_code'] ?? null;
+		$orderDeliverCost = 20000; // hard-code for now
 
 		// Get cart items
 		$cart = Auth::user()->cart()->with([
@@ -60,7 +63,12 @@ class OrderController extends Controller
 		}
 
 		// Find delivery address
-		$deliverAddress = $user->user_addresses->where('user_address_id', $userAddressId)->first()['full_address'];
+		$addressItem = $user->user_addresses
+			->where(
+				'user_address_id',
+				$userAddressId
+			)->first();
+		$deliverAddress = $addressItem['full_address'];
 		if (!$deliverAddress) {
 			return response()->json(['message' => 'Cannot find delivery address'], 422);
 		}
@@ -81,9 +89,9 @@ class OrderController extends Controller
 				'voucher_code' => $voucherCode,
 				'order_provisional_price' => $subtotal,
 				'order_deliver_cost' => $orderDeliverCost,
-				'order_total_price' => $subtotal + $orderDeliverCost, // Placeholder, calculate later
+				'order_total_price' => $subtotal + $orderDeliverCost,
 				'order_payment_method' => $paymentMethodId,
-				'order_status' => 'pending',
+				'order_status' => $paymentMethodId === Constants::PAYMENT_METHOD_COD ? 'pending' : 'online_payment_pending',
 				'order_additional_note' => $additionalNote,
 				'order_deliver_address' => $deliverAddress,
 				'order_payment_date' => null,
@@ -125,15 +133,8 @@ class OrderController extends Controller
 		$order->save();
 		$order->order_items()->saveMany($orderItems);
 
-		switch ($paymentMethodId) {
-			case Constants::PAYMENT_METHOD_COD:
-
-				break;
-		}
-
-		Log::debug("Done");
-
-		return response()->json([
+		// Finally, handle different flows a bit differently for different payment methods
+		$responseData = [
 			'message' => 'Order placed',
 			'user' => $user,
 			'order_id' => $order->order_id,
@@ -141,7 +142,32 @@ class OrderController extends Controller
 			'order_deliver_cost' => $order->order_deliver_cost,
 			'payment_method_id' => $paymentMethodId,
 			'voucher_code' => $voucherCode,
-		]);
+		];
+
+		switch ($paymentMethodId) {
+			case Constants::PAYMENT_METHOD_COD:
+				break;
+			// Handle Momo payment flow
+			case Constants::PAYMENT_METHOD_MOMO:
+				$momoService = app(MomoPaymentService::class);
+				$paymentCreationInfo = $momoService->createPaymentIntent(
+					$order->order_id,
+					'', // Order info
+					$order->order_total_price, // amount
+					$validatedInput['language'] ?? 'vi',
+				);
+				Log::debug('Momo payment creation response:', [$paymentCreationInfo]);
+				if ($paymentCreationInfo['success'] === false) {
+					Log::error('Failed to create Momo payment intent: ');
+					return response()->json(['message' => $paymentCreationInfo['message']], 500);
+				} else {
+					$responseData['pay_urls'] = $paymentCreationInfo['payUrls']; // Attach generated payment URLs to response
+				}
+				break;
+		}
+
+		Log::debug("Order placed");
+		return response()->json($responseData);
 	}
 
 	public function cancelOrder(Request $request)
@@ -202,6 +228,7 @@ class OrderController extends Controller
 
 			Log::info('Gift products added to order items:', context: [$orderItems]);
 		}
+
 		// Handle other voucher types
 		else {
 			$discount_value = VoucherController::calculateDiscountValue(
@@ -213,7 +240,6 @@ class OrderController extends Controller
 			switch ($voucher->voucher_fields) {
 				case 'freeship':
 					$order->order_deliver_cost -= $discount_value;
-					break;
 				default:
 					$order->order_total_price -= $discount_value;
 					break;
@@ -236,6 +262,7 @@ class OrderController extends Controller
 			// Check if the user has permission to update this order
 			$user = Auth::user();
 			$hasPermission = $user->role_type === 1 || $user->user_id === $order->user_id;
+			Log::debug('User ID:', [$user->user_id]);
 			if (!$hasPermission) {
 				return response()->json(['message' => 'Unauthorized to update this order'], 403);
 			}

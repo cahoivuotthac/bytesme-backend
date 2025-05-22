@@ -3,13 +3,12 @@
 namespace App\Http\Controllers;
 
 use Carbon\Carbon;
-use Cookie;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\PasswordResets;
 use App\Models\OTP;
 use Illuminate\Support\Facades\Log;
-use Str;
+use Illuminate\Support\Str;
 // use Auth;
 use Exception;
 

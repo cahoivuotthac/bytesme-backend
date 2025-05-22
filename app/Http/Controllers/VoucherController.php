@@ -122,6 +122,53 @@ class VoucherController extends Controller
 		return true;
 	}
 
+	// Expose and endpoint for public check of voucher applicability
+	public function isVoucherApplicablePublic(Request $request)
+	{
+		try {
+			$request->validate([
+				'voucher_code' => 'string|required',
+				'selected_item_ids' => 'string|required'
+			]);
+		} catch (Exception $e) {
+			Log::error('Invalid voucher code input:', [$e->getMessage()]);
+			return response()->json(['message' => 'Invalid voucher code'], 400);
+		}
+
+		$voucherCode = $request->input('voucher_code');
+		Log::info('Voucher code:', [$voucherCode]);
+
+		// Fetch the voucher
+		$voucher = Voucher::where('voucher_code', $voucherCode)->first();
+		if (!$voucher) {
+			return response()->json(['message' => 'Voucher not found'], 404);
+		}
+
+		$selectedItemIds = array_map('intval', array: explode(',', $request->input('selected_item_ids')));
+		Log::info('Selected items ID list:', [$selectedItemIds]);
+		// Fetch the cart items for the user
+		$cart = Auth::user()->cart()->with([
+			'items.product' => function ($query) {
+				$query->select('product_id', 'category_id', 'product_discount_percentage');
+			}
+		])->first();
+		// Filter cart items to only those with product_id in selectedItemIds
+		$cartItems = [];
+		if ($cart) {
+			$cartItems = $cart->items->whereIn('product_id', $selectedItemIds)->values();
+		}
+		Log::info('Cart items:', [json_encode($cartItems)]);
+
+		if (!$voucher) {
+			return response()->json(['message' => 'Voucher not found'], 404);
+		}
+
+		return response()->json(data: [
+			'voucher_code' => $voucher->voucher_code,
+			'is_applicable' => self::isVoucherApplicable($voucher, [])
+		]);
+	}
+
 	/**
 	 * Parse gift product value format (e.g., '1:1,5:1')
 	 * Returns associative array where key is product_id and value is quantity
@@ -199,7 +246,8 @@ class VoucherController extends Controller
 	{
 		try {
 			$request->validate([
-				'selected_item_ids' => 'string|required' // A list of product_id, delimited by commas
+				'selected_item_ids' => 'string|required', // A list of product_id, delimited by commas
+				'voucher_code' => 'string|nullable',
 			]);
 		} catch (Exception $e) {
 			Log::error('Invalid selected items ID list input:', [$e->getMessage()]);
@@ -210,11 +258,17 @@ class VoucherController extends Controller
 		Log::info('Selected items ID list:', [$selectedItemIds]);
 
 		// Fetch vouchers for the user
-		$vouchers = Voucher::with('voucherRules')
-			->offset($request->input('offset', default: 0))
-			->limit($request->input('limit', 10))
-			->orderBy('voucher_start_date', 'desc') // Newest first
-			->get();
+		if ($request->input('voucher_code')) {
+			$vouchers = Voucher::where('voucher_code', $request->input('voucher_code'))
+				->with('voucherRules')
+				->get();
+		} else {
+			$vouchers = Voucher::with('voucherRules')
+				->offset($request->input('offset', default: 0))
+				->limit($request->input('limit', 10))
+				->orderBy('voucher_start_date', 'desc') // Newest first
+				->get();
+		}
 
 		$cart = Auth::user()->cart()->with([
 			'items.product' => function ($query) {

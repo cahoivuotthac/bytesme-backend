@@ -3,6 +3,7 @@
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\MomoPaymentController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VoucherController;
@@ -118,6 +119,15 @@ Route::prefix('order')->middleware(['auth:sanctum'])->group(function () {
 		// Delete notifications
 		Route::delete('/', [NotificationController::class, 'deleteNotifications']);
 	});
+
+	Route::prefix('payment')->group(function () {
+		Route::prefix('momo')->group(function () {
+			Route::post('/create-intent', [MomoPaymentController::class, 'createPaymentIntent'])->withoutMiddleware(['auth:sanctum']);
+			// Exclude auth:sanctum for these two routes
+			Route::post('/ipn-callback', [MomoPaymentController::class, 'handleIpnCallback'])->withoutMiddleware(['auth:sanctum']);
+			Route::get('/redirect-callback', [MomoPaymentController::class, 'handleRedirectCallback']);
+		});
+	});
 });
 
 Route::prefix('info')->group(function () {
@@ -206,8 +216,7 @@ Route::prefix('info')->group(function () {
 Route::prefix('voucher')->middleware(['auth:sanctum'])->group(function () {
 	Route::get('/', [VoucherController::class, 'getVouchers']);
 	Route::get('/gift-products', [VoucherController::class, 'getVoucherGiftProducts']);
-	// Route::post('/apply', action: [UserController::class, 'applyVoucher']);
-	// Route::post('/remove', [UserController::class, 'removeVoucher']);
+	Route::get('/is-applicable', [VoucherController::class, 'isVoucherApplicablePublic']);
 });
 
 

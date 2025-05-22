@@ -57,7 +57,7 @@ class Order extends Model
 		'order_payment_method' => 'string',
 		'order_deliver_time' => 'datetime',
 		'order_is_paid' => 'bool',
-		'order_status' => 'string',
+		'order_status' => 'string', // online_payment_pending, pending, delivering, delivered, cancelled
 		'order_additional_note' => 'string',
 		'order_deliver_address' => 'string',
 	];
