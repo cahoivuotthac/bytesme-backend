@@ -24,7 +24,7 @@ return new class extends Migration {
             $table->timestamp('order_payment_date')->nullable();
             $table->string('order_payment_method', 50); // "Banking" or "COD"
             $table->boolean('order_is_paid')->default(false);
-            $table->enum('order_status', ['pending', 'delivering', 'delivered', 'cancelled'])->default('pending');
+            $table->enum('order_status', ['online_payment_pending', 'pending', 'delivering', 'delivered', 'cancelled'])->default('pending');
             $table->text('order_additional_note')->nullable();
 			$table->text('order_addtional_note')->nullable();
 
