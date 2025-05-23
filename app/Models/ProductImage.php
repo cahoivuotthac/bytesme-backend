@@ -30,7 +30,7 @@ class ProductImage extends Model
 	public $incrementing = false;
 	protected $casts = [
 		'product_image_id' => 'int',
-		'image_type' => 'int'
+		'product_image_type' => 'int'
 	];
 
 	protected $fillable = [
@@ -38,7 +38,7 @@ class ProductImage extends Model
 		'product_image_name',
 		'product_image',
 		'product_image_url',
-		'image_type'
+		'product_image_type'
 	];
 
 	public function product()
