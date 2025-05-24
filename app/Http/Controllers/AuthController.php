@@ -286,8 +286,11 @@ class AuthController extends Controller
 
 			// Find existing user or create new one
 			$user = User::where('email', $email)->first();
+			$isNewUser = $user ? false : true;
+			// Create new user if not exist
 
-			if (!$user) {
+			if ($isNewUser) {
+				Log::info("Creating new user with email: " . $email);
 				// Create new user
 				DB::beginTransaction();
 
@@ -296,7 +299,7 @@ class AuthController extends Controller
 				$emailPrefix = explode('@', $email)[0];
 				$name = $socialUser->getName() ?? $emailPrefix;
 
-				$cart = Cart::create([
+				$cart = Cart::create(attributes: [
 					'items_count' => 0,
 				]);
 
@@ -322,6 +325,7 @@ class AuthController extends Controller
 				'success' => true,
 				'message' => 'Đăng nhập thành công',
 				'user' => $user,
+				'is_new_user' => $isNewUser, // notify the client that this is a new user to ask for additional info
 				'token' => $token
 			]);
 
