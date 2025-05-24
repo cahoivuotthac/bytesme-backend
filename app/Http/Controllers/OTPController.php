@@ -9,6 +9,7 @@ use App\Models\PasswordResets;
 use App\Models\OTP;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Notification;
 // use Auth;
 use Exception;
 
@@ -25,8 +26,8 @@ class OTPController extends Controller
 		// Validate input
 		try {
 			$validatedData = $request->validate([
-				'phone_number' => 'required|string|min:10|max:15',
-				'is_password_reset' => 'nullable|string',
+				'email' => 'required|string|min:1|max:255',
+				'is_password_reset' => 'nullable|boolean',
 			]);
 		} catch (Exception $e) {
 			Log::error("Input validation error", [
@@ -40,12 +41,23 @@ class OTPController extends Controller
 			], 400);
 		}
 
-		$phone_number = $validatedData['phone_number'];
-		$is_password_reset = $validatedData['is_password_reset'] ?? "false";
+		$email = $validatedData['email'];
+		$is_password_reset = $validatedData['is_password_reset'] ?? false;
+
+		// Fail with 409 if user already exists whilte not a reset-password intent (meaning they already verified)
+		if (
+			$is_password_reset === false &&
+			User::where('email', $email)->exists()
+		) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Email đã được đăng ký'
+			], 409);
+		}
 
 		try {
 			// Ensure caller don't exceed rate limit
-			$otp = OTP::where('phone_number', $phone_number)->first();
+			$otp = OTP::where('email', $email)->first();
 			if ($otp) {
 				$createdTime = new Carbon($otp->updated_at);
 				$diffInSeconds = abs(Carbon::now()->diffInSeconds($createdTime));
@@ -57,14 +69,14 @@ class OTPController extends Controller
 				}
 			}
 
-			// In case of password reset request, check if user with phone number exists
-			if ($is_password_reset === 'true') {
+			// In case of password reset request, check if user with email exists
+			if ($is_password_reset === true) {
 				// Check if the user exists
-				Log::debug("Generating OTP for password reset, phone number: " . $phone_number);
-				if (User::where('phone_number', $phone_number)->count() < 1)
+				Log::debug("Generating OTP for password reset, email: " . $email);
+				if (User::where('email', $email)->count() < 1)
 					return response()->json([
 						'success' => false,
-						'message' => 'Số điện thoại này chưa liên kết với tài khoản nào'
+						'message' => 'email not linked to any account'
 					], 400);
 			}
 
@@ -73,31 +85,29 @@ class OTPController extends Controller
 
 			// Store or update OTP in database
 			OTP::updateOrCreate(
-				['phone_number' => $phone_number], // Search criteria
+				['email' => $email], // Search criteria
 				['code' => $otp_code] // Values to update or create with
 			);
 
-
 			// Log OTP generation (remove in production or use proper logging)
 			Log::info("OTP generated", [
-				'phone_number' => $phone_number,
+				'email' => $email,
 				'otp' => $otp_code,
 			]);
 
-			// Here you would typically send the OTP via SMS
-			// For development, we'll just return it in the response
-			// In production, you should integrate with an SMS provider
+			/// Send OTP via email channel
+			Notification::route('mail', $email)
+				->notify(new \App\Notifications\OTPNotification($otp_code));
 
 			return response()->json([
 				'success' => true,
-				'message' => 'Mã OTP đã được gửi đến số điện thoại của bạn',
+				'message' => 'Mã OTP đã được gửi đến địa chỉ email của bạn',
 				'debug_otp' => $otp_code, // Remove in production
 			]);
-
 		} catch (Exception $e) {
 			Log::error("Failed to generate OTP", [
 				'error' => $e->getMessage(),
-				'phone_number' => $phone_number
+				'email' => $email
 			]);
 
 			return response()->json([
@@ -108,7 +118,7 @@ class OTPController extends Controller
 	}
 
 	/**
-	 * Verify the OTP code for a phone number
+	 * Verify the OTP code for email
 	 * 
 	 * @param Request $request
 	 * @return \Illuminate\Http\JsonResponse
@@ -117,25 +127,24 @@ class OTPController extends Controller
 	{
 		// Validate input
 		$validatedData = $request->validate([
-			'phone_number' => 'required|string|min:9|max:10',
+			'email' => 'required|string|min:1|max:255',
 			'code' => 'required|numeric|digits:4',
-			'is_password_reset' => 'nullable|string',
+			'is_password_reset' => 'nullable|boolean',
 			'device_name' => 'nullable|string',
 		]);
 
-		$phone_number = $validatedData['phone_number'];
+		$email = $validatedData['email'];
 		$code = $validatedData['code'];
-		$is_password_reset = $validatedData['is_password_reset'] ?? "false";
-		$deviceName = $validatedData['device_name'] ?? "mobile";
+		$is_password_reset = $validatedData['is_password_reset'] ?? false;
 
 		try {
 			// Find OTP record
-			$otp = OTP::where('phone_number', $phone_number)->first();
+			$otp = OTP::where('email', $email)->first();
 
 			if (!$otp) {
 				return response()->json([
 					'success' => false,
-					'message' => 'Không tìm thấy mã OTP cho số điện thoại này'
+					'message' => 'Không tìm thấy mã OTP cho email này'
 				], 404);
 			}
 
@@ -148,7 +157,6 @@ class OTPController extends Controller
 				], 400);
 			}
 
-
 			// Verify OTP
 			if ((string) $otp->code !== (string) $code) {
 				return response()->json([
@@ -157,15 +165,14 @@ class OTPController extends Controller
 				], 400);
 			}
 
-			// Mark user's phone as verified if they exist
+			// Mark user's email as verified if they exist
 			$otp->verified_at = Carbon::now();
-
 			$otp->save();
 
-			// If it's a password reset, send a password reset token
-			if ($is_password_reset === 'true') {
+			// If it's a password reset scenario, send a password reset token
+			if ($is_password_reset === true) {
 				// Here you would typically send a password reset token
-				$user = User::where('phone_number', $phone_number)->first();
+				$user = User::where('email', $email)->first();
 
 				if (!$user) {
 					return response()->json([
@@ -193,32 +200,31 @@ class OTPController extends Controller
 			}
 
 			// Log user in if user exists
-			$user = User::where('phone_number', operator: $phone_number)->first();
-			if ($user) {
-				Log::info("User exists, logging in", [
-					'user_id' => $user->user_id,
-					'phone_number' => $phone_number
-				]);
+			// $user = User::where('email', '=', $email)->first();
+			// if ($user) {
+			// 	Log::info("User exists, logging in", [
+			// 		'user_id' => $user->user_id,
+			// 		'email' => $email
+			// 	]);
 
-				// Auth::login($user, remember: true);
-				$token = $user->createToken($deviceName)->plainTextToken;
-				return response()->json([
-					'success' => true,
-					'message' => 'Đăng nhập bằng số điện thoại thành công',
-					'user' => $user,
-					'token' => $token,
-				]);
-			}
+			// 	// Auth::login($user, remember: true);
+			// 	$token = $user->createToken($deviceName)->plainTextToken;
+			// 	return response()->json([
+			// 		'success' => true,
+			// 		'message' => 'Đăng nhập thành công',
+			// 		'user' => $user,
+			// 		'token' => $token,
+			// 	]);
+			// }
 
 			return response()->json(data: [
 				'success' => true,
-				'message' => 'Xác thực số điện thoại thành công'
+				'message' => 'Xác thực thành công'
 			]);
-
 		} catch (Exception $e) {
-			Log::error("Failed to verify OTP", [
+			Log::error("Could not verify OTP", [
 				'error' => $e->getMessage(),
-				'phone_number' => $phone_number
+				'email' => $email
 			]);
 
 			return response()->json([

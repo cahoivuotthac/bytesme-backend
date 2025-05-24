@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Order;
+use App\Notifications\Channels\ExpoPushChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\BroadcastMessage;
@@ -47,11 +48,11 @@ class OrderStatusNotification extends Notification
 			'order_id' => $this->order->order_id,
 			'status' => $this->status,
 			'message' => $this->message,
-			'order_details' => [
-				'total_price' => $this->order->order_total_price,
-				'deliver_time' => $this->order->order_deliver_time ? $this->order->order_deliver_time->toIso8601String() : null,
-				'deliver_address' => $this->order->order_deliver_address,
-			],
+			// 'order_details' => [
+			// 'total_price' => $this->order->order_total_price,
+			// 'deliver_time' => $this->order->order_deliver_time ? $this->order->order_deliver_time->toIso8601String() : null,
+			// 'deliver_address' => $this->order->order_deliver_address,
+			// ],
 			'timestamp' => now()->toIso8601String(),
 		];
 	}
@@ -75,6 +76,20 @@ class OrderStatusNotification extends Notification
 			],
 			'timestamp' => now()->toIso8601String(),
 		]);
+	}
+
+	public function toExpoPush($notifiable): array
+	{
+		return [
+			'body' => $this->message,
+			'title' => 'Order updated',
+			// 'sound' => 'default',
+			// 'priority' => 'high',
+			'data' => [
+				'order_id' => $this->order->order_id,
+				'status' => $this->status,
+			],
+		];
 	}
 
 	/**

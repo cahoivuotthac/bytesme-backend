@@ -115,4 +115,9 @@ class User extends Authenticatable
 	{
 		return $this->hasMany(UserAddress::class, 'user_id', 'user_id');
 	}
+
+	public function expo_push_tokens()
+	{
+		return $this->hasMany(ExpoPushToken::class, 'user_id', 'user_id');
+	}
 }

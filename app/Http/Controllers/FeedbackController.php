@@ -22,7 +22,6 @@ class FeedbackController extends Controller
 				'improve_tags' => 'nullable',
 				'is_anofnymous' => 'nullable|string|in:true,alse',
 				'images' => 'nullable|array|max:3',
-				// 'images.*' => 'image|max:2048'
 			]);
 		} catch (\Exception $e) {
 			Log::error('FeedbackController@sendFeedback: validation error: ' . $e->getMessage());

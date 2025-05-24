@@ -41,7 +41,7 @@ class OrderFeedback extends Model
 
 	protected $fillable = [
 		'user_id',
-		'product_id',
+		'order_id',
 		'feedback_content',
 		'num_star',
 		'feedback_tags',
@@ -59,6 +59,6 @@ class OrderFeedback extends Model
 
 	public function feedback_images()
 	{
-		return $this->hasMany(FeedbackImage::class, 'product_feedback_id', 'product_feedback_id');
+		return $this->hasMany(FeedbackImage::class, 'order_feedback_id', 'order_feedback_id');
 	}
 }

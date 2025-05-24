@@ -116,6 +116,12 @@ class AuthController extends Controller
 	// Handle registration with token
 	public function handleSignup(Request $request): mixed
 	{
+		$request->validate([
+			'email' => 'required|email',
+			'password' => 'required|string|min:8',
+			'phone_number' => 'required|string|min:9|max:10',
+		]);
+
 		$email = $request->input('email');
 		$password = $request->input('password');
 		$phone_number = $request->input('phone_number');
@@ -153,13 +159,13 @@ class AuthController extends Controller
 			], 409);
 		}
 
-		// Verify if phone number is verified via OTP
-		$otp = OTP::where('phone_number', $phone_number)->first();
+		// Fail if email had not been verified via OTP
+		$otp = OTP::where('email', $email)->first();
 		if (!$otp || !$otp->verified_at) {
 			return response()->json([
 				'success' => false,
-				'message' => 'Số điện thoại chưa được xác thực'
-			], 400);
+				'message' => 'Email chưa được xác thực'
+			], 422);
 		}
 
 		// Create user
@@ -175,9 +181,7 @@ class AuthController extends Controller
 				'cart_id' => null,
 			]);
 			Log::debug("user id: " . $user->user_id);
-			$cart = Cart::create([
-
-			]);
+			$cart = Cart::create();
 			$user->cart_id = $cart->cart_id;
 			$user->save();
 			$otp->delete();
@@ -239,7 +243,7 @@ class AuthController extends Controller
 		}
 	}
 
-	public function showConsentScreen($social)
+	public function getSocialLoginUrl($social)
 	{
 		switch ($social) {
 			case 'facebook':
@@ -261,7 +265,23 @@ class AuthController extends Controller
 	public function handleSocialCallback(Request $request, $social)
 	{
 		try {
-			$socialUser = Socialite::driver($social)->stateless()->user();
+			$request->validate([
+				'access_token' => 'required|string',
+			]);
+		} catch (Exception $e) {
+			Log::info('Bad input data: ' . $e->getMessage());
+			return response()->json([
+				'message' => 'Bad input data:' . $e->getMessage()
+			], 400);
+		}
+
+		try {
+			$socialUser = Socialite::driver($social)
+				->stateless()
+				->userFromToken($request->input('access_token'));
+			Log::info("Social user data: ", [
+				$socialUser,
+			]);
 			$email = $socialUser->getEmail();
 
 			// Find existing user or create new one
@@ -271,10 +291,10 @@ class AuthController extends Controller
 				// Create new user
 				DB::beginTransaction();
 
-				$name = $socialUser->getName();
+				$avatar = $socialUser->getAvatar();
 				$password = AuthUtils::random_password();
 				$emailPrefix = explode('@', $email)[0];
-				$randomUsername = AuthUtils::random_name($emailPrefix);
+				$name = $socialUser->getName() ?? $emailPrefix;
 
 				$cart = Cart::create([
 					'items_count' => 0,
@@ -282,6 +302,7 @@ class AuthController extends Controller
 
 				$user = User::create([
 					'email' => $email,
+					'avatar' => $avatar,
 					'name' => $name,
 					'password' => $password,
 					'role_type' => 0,
@@ -322,17 +343,15 @@ class AuthController extends Controller
 
 	public function handleResetPassword(Request $request)
 	{
-		$phone_number = $request->input('phone_number');
+		$request->validate([
+			'email' => 'required|email',
+			'new_password' => 'required|string|min:8',
+			'reset_token' => 'required|string',
+		]);
+
+		$email = $request->input('email');
 		$new_password = $request->input('new_password');
 		$reset_token = $request->input('reset_token');
-
-		// Check for required inputs
-		if (empty($phone_number) || empty($new_password) || empty($reset_token)) {
-			return response()->json([
-				'success' => false,
-				'message' => 'Số điện thoại, mật khẩu mới và mã xác thực là bắt buộc'
-			], 400);
-		}
 
 		try {
 			// Validate password format
@@ -361,11 +380,11 @@ class AuthController extends Controller
 			}
 
 			// Update user's password
-			$user = User::where('phone_number', $phone_number)->first();
+			$user = User::where('email', $email)->first();
 			if (!$user) {
 				return response()->json([
 					'success' => false,
-					'message' => 'Không tìm thấy người dùng với số điện thoại này'
+					'message' => 'Không tìm thấy người dùng với email này'
 				], 404);
 			}
 
@@ -388,7 +407,7 @@ class AuthController extends Controller
 		} catch (Exception $e) {
 			Log::error("Password reset error", [
 				'error' => $e->getMessage(),
-				'phone_number' => $phone_number
+				'phone_number' => $email
 			]);
 
 			return response()->json([

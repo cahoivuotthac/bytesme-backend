@@ -29,6 +29,8 @@ use Illuminate\Support\Facades\Log;
  * @property string $product_unit_price
  * @property int|null $is_returnable
  * @property int|null $category_id
+ * @property array $sizes
+ * @property array $prices
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  *
@@ -95,19 +97,21 @@ class Product extends Model
 		return $this->belongsTo(Category::class, 'category_id', 'category_id');
 	}
 
-	public function product_categories()
-	{
-		return $this->hasMany(ProductCategory::class, 'product_id', 'product_id');
-	}
-
 	public function product_feedbacks()
 	{
-		return $this->hasMany(OrderFeedback::class, 'product_id', 'product_id');
+		return $this->hasManyThrough(
+			OrderFeedback::class,
+			OrderItem::class,
+			'product_id',      // Foreign key on OrderItem table...
+			'order_id',        // Foreign key on OrderFeedback table...
+			'product_id',      // Local key on Product table...
+			'order_id'         // Local key on OrderItem table...
+		);
 	}
 
 	public function wishlist()
 	{
-		return $this->hasOne(Wishlist::class, 'product_id', 'product_id');
+		return $this->hasMany(Wishlist::class, 'product_id', 'product_id');
 	}
 
 	public function product_images()

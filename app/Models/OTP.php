@@ -23,15 +23,15 @@ use Illuminate\Database\Eloquent\Model;
 class OTP extends Model
 {
 	protected $table = 'otp';
-	protected $primaryKey = 'phone_number';
+	protected $primaryKey = 'email';
 
 	protected $casts = [
 		'verified_at' => 'string',
-		'phone_number' => 'string',
+		'email' => 'string',
 	];
 
 	protected $fillable = [ //mass-assigned
-		'phone_number',
+		'email',
 		'code',
 		'verified_at',
 	];

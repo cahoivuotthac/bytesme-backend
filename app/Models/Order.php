@@ -114,6 +114,7 @@ class Order extends Model
 			// Find the user who owns the order and notify them
 			$user = User::where('user_id', $order->user_id)->first();
 
+			// Push to db, expo channel
 			$user->notify(new OrderStatusNotification(
 				$order,
 				$newStatus,

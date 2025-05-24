@@ -40,8 +40,8 @@ Route::prefix('auth')->group(function () {
 	});
 
 	// OAuth2 social login
-	Route::post('signin/{social}', [AuthController::class, 'showConsentScreen']);
-	Route::get('signin/{social}/callback', [AuthController::class, 'handleSocialCallback']);
+	Route::post('/signin/{social}', [AuthController::class, 'getSocialLoginUrl']);
+	Route::post('/signin/{social}/callback', [AuthController::class, 'handleSocialCallback']);
 });
 
 Route::prefix('user')->middleware('auth:sanctum')->group(function () {
@@ -50,11 +50,13 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
 	Route::post('/update-avatar', [UserController::class, 'updateAvatar']);
 });
 
-Route::prefix('product')->group(function () {
+Route::prefix('product')->middleware('auth:sanctum')->group(function () {
 	Route::get('/homepage-products', [ProductController::class, 'getHomepageProducts']);
-	Route::get('/{id}', function ($id) {
-		return response()->json(['product_id' => $id]);
-	});
+	Route::get('/category', [ProductController::class, 'getProductsByCategory']);
+	Route::get('/details', [ProductController::class, 'getProductDetails']);
+	// Test get products feedback
+	Route::get('/feedbacks', [ProductController::class, 'getProductFeedbacks']);
+	Route::get('related-products', [ProductController::class, 'getRelatedProducts']);
 });
 
 // Use sanctum auth middleware for user routes
@@ -89,12 +91,19 @@ Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
 		Route::post('/remove', [UserController::class, 'removeAddress']);
 		Route::post('/set-default', [UserController::class, 'setDefaultAddress']);
 	});
+	Route::post('/update-address', [UserController::class, 'updateAddress']);
+
+	Route::prefix('notification')->group(function () {
+		// Route::get('/', [NotificationController::class, 'getNotifications']);
+		// Route::get('/{id}', [NotificationController::class, 'getNotificationById']);
+		// Route::post('/mark-as-read', [NotificationController::class, 'markAsRead']);
+		// Route::delete('/', [NotificationController::class, 'deleteNotifications']);
+		Route::post('/add-push-token', [UserController::class, 'addPushToken']);
+	});
 
 	Route::get('/test', function () {
 		return response()->json(['message' => 'Test route']);
 	});
-
-	Route::post('/update-address', [UserController::class, 'updateAddress']);
 });
 
 Route::prefix('order')->middleware(['auth:sanctum'])->group(function () {

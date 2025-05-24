@@ -10,12 +10,12 @@ return new class extends Migration {
 	 */
 	public function up(): void
 	{
-		Schema::create('otp', function (Blueprint $table) {
-			$table->string('email')->unique(); // Unique email
-			$table->primary('email');
-			$table->string('code');
-			$table->timestamp('verified_at')->nullable();
-			$table->timestamps();  // created_at and updated_at fields
+		Schema::create('expo_push_tokens', function (Blueprint $table) {
+			$table->id('push_token_id');
+			$table->string('push_token');
+			$table->foreignId('user_id')
+				->constrained('users', 'user_id')
+				->onDelete('cascade');
 		});
 	}
 
@@ -24,6 +24,8 @@ return new class extends Migration {
 	 */
 	public function down(): void
 	{
-		Schema::dropIfExists('otp');
+		Schema::table('users', function (Blueprint $table) {
+			//
+		});
 	}
 };
