@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\VoucherRule;
 use Exception;
 use App\Constants;
 use App\Models\Order;
@@ -53,7 +54,7 @@ class OrderController extends Controller
 		// Get cart items
 		$cart = Auth::user()->cart()->with([
 			'items.product' => function ($query) {
-				$query->select('product_id', 'category_id', 'product_discount_percentage');
+				$query->select('product_id', 'category_id', 'product_discount_percentage', 'product_stock_quantity', 'product_name');
 			}
 		])->first();
 		$selectedItemIds = array_map('intval', explode(',', $validatedInput['selected_item_ids']));
@@ -62,16 +63,31 @@ class OrderController extends Controller
 			$cartItems = $cart->items->whereIn('product_id', $selectedItemIds)->values();
 		}
 
+		// Check stock quantity before proceeding
+		foreach ($cartItems as $item) {
+			$product = $item->product;
+			if ($product->product_stock_quantity < $item->cart_items_quantity) {
+				return response()->json([
+					'message' => "Insufficient stock for product {$product->product_name}. Available: {$product->product_stock_quantity}, Requested: {$item->cart_items_quantity}",
+					'code' => 'INSUFFICIENT_STOCK',
+					'extras' => [
+						'product_id' => $product->product_id,
+						'product_name' => $product->product_name,
+					]
+				], 422);
+			}
+		}
+
 		// Find delivery address
 		$addressItem = $user->user_addresses
 			->where(
 				'user_address_id',
 				$userAddressId
 			)->first();
-		$deliverAddress = $addressItem['full_address'];
-		if (!$deliverAddress) {
-			return response()->json(['message' => 'Cannot find delivery address'], 422);
+		if (!$addressItem || !isset($addressItem['full_address'])) {
+			return response()->json(['message' => 'Cannot find delivery address', 'code' => 'ADDRESS_NOT_FOUND'], 422);
 		}
+		$deliverAddress = $addressItem['full_address'];
 		Log::debug('Deliver address:', [$deliverAddress]);
 
 		// Calculate order subtotal
@@ -83,7 +99,7 @@ class OrderController extends Controller
 		}
 
 		// Build order and order items
-		$order = new Order(
+		$order = Order::create(
 			[
 				'user_id' => $user->user_id,
 				'voucher_code' => $voucherCode,
@@ -99,6 +115,8 @@ class OrderController extends Controller
 				'order_deliver_time' => null,
 			]
 		);
+
+
 		$orderItems = $cartItems->map(function ($item) use ($order) {
 			// Calculate item discount amount (if any, could be 0 if no discount)
 			$itemDiscount = ceil(($item->cart_items_quantity * $item->cart_items_unitprice) * $item->product->product_discount_percentage / 100);
@@ -127,11 +145,16 @@ class OrderController extends Controller
 
 			Log::debug('Voucher is applicable:');
 			// Apply voucher to order
-			$this->applyVoucher($voucher, $order, $orderItems);
+			$voucher_rules = $voucher->voucherRules()->get();
+			$this->applyVoucher($voucher, $voucher_rules, $order, $orderItems, true);
 		}
 
-		$order->save();
-		$order->order_items()->saveMany($orderItems);
+		// Decrease product stock quantities
+		foreach ($cartItems as $item) {
+			$product = $item->product;
+			$product->product_stock_quantity -= $item->cart_items_quantity;
+			$product->save();
+		}
 
 		// Finally, handle different flows a bit differently for different payment methods
 		$responseData = [
@@ -189,12 +212,89 @@ class OrderController extends Controller
 		return response()->json(['message' => 'Order cancelled successfully']);
 	}
 
-	public static function applyVoucher($voucher, $order, $orderItems): void
+	public static function unapplyVoucher($voucher, $voucher_rules, $order, $orderItems, $saveImmediately = false): void
 	{
+		// Make changes to voucher rules if necessary (e.g., increment remaining quantity)
+		foreach ($voucher_rules as $rule) {
+			if ($rule->voucher_rule_type === 'remaining_quantity') {
+				$rule->voucher_rule_value += 1; // Increment remaining quantity
+			}
+		}
+
+		// Handle voucher type gift_product specifically
+		if ($voucher->voucher_type === 'gift_product') {
+			Log::info('Removing gift products from order items:', [$orderItems]);
+
+			$giftProducts = VoucherController::parseGiftProductValue($voucher->voucher_value);
+			// Remove gift products from order items
+			foreach ($giftProducts as $giftProduct) {
+				// Find and remove gift products from order items
+				foreach ($orderItems as $index => $item) {
+					if ($item['product_id'] == $giftProduct['product_id'] && $item['order_items_size'] == $giftProduct['size']) {
+						// If quantity matches exactly, remove the item completely
+						if ($item['order_items_quantity'] == $giftProduct['quantity']) {
+							unset($orderItems[$index]);
+						} else {
+							// Otherwise, decrease the quantity
+							$item['order_items_quantity'] -= $giftProduct['quantity'];
+						}
+
+						// Restore stock quantity for gift product
+						$product = \App\Models\Product::find($giftProduct['product_id']);
+						if ($product) {
+							$product->product_stock_quantity += $giftProduct['quantity'];
+							$product->save();
+						}
+						break;
+					}
+				}
+			}
+
+			// Re-index the array after removing items
+			$orderItems = array_values($orderItems);
+
+
+			Log::info('Gift products removed from order items:', [$orderItems]);
+		}
+
+		// Handle other voucher types
+		else {
+			switch ($voucher->voucher_fields) {
+				case 'freeship':
+					$order->order_deliver_cost += $voucher->voucher_value;
+					break;
+				default:
+					$order->order_total_price += $voucher->voucher_value;
+					break;
+			}
+		}
+
+		if ($saveImmediately) {
+			foreach ($voucher_rules as $rule) {
+				$rule->save();
+			}
+			$order->save();
+			Log::debug("Unapplied voucher and saved changes");
+		}
+		Log::debug("Unapplied voucher");
+	}
+
+	public static function applyVoucher($voucher, $voucher_rules, $order, $orderItems, $saveImmediately = false): void
+	{
+		Log::debug("Order ID in applyVoucher:", [$order->order_id]);
+		// Add voucher id to order
+		$order->voucher_id = $voucher->voucher_id;
+
+		// Make changes to voucher rules if necessary (e.g., decrement remaining quantity)
+		foreach ($voucher_rules as $rule) {
+			if ($rule->voucher_rule_type === 'remaining_quantity') {
+				$rule->voucher_rule_value -= 1; // Decrement remaining quantity
+			}
+		}
+
 		// Handle voucher type gift_product specifically
 		if ($voucher->voucher_type === 'gift_product') {
 			Log::info('Order items before applying gift products:', [$orderItems]);
-			Log::debug("Im here");
 			Log::debug('Voucher value:', [$voucher->voucher_value]);
 			$giftProducts = VoucherController::parseGiftProductValue($voucher->voucher_value);
 			Log::info('Parsed gift products:', [$giftProducts]);
@@ -208,6 +308,12 @@ class OrderController extends Controller
 					if ($item['product_id'] == $giftProduct['product_id'] && $item['order_items_size'] == $giftProduct['size']) {
 						// Update the quantity
 						$item['order_items_quantity'] += $giftProduct['quantity'];
+						// Decrease stock quantity for gift product
+						$product = \App\Models\Product::find($giftProduct['product_id']);
+						if ($product) {
+							$product->product_stock_quantity -= $giftProduct['quantity'];
+							$product->save();
+						}
 						$existingItem = true;
 						break;
 					}
@@ -245,6 +351,16 @@ class OrderController extends Controller
 					break;
 			}
 		}
+
+
+		// Save changes if rqeuired
+		if ($saveImmediately) {
+			$order->order_items()->saveMany($orderItems);
+			foreach ($voucher_rules as $rule) {
+				$rule->save();
+			}
+			$order->save();
+		}
 	}
 
 	public function updateOrderStatus(Request $request)
@@ -253,11 +369,12 @@ class OrderController extends Controller
 			$validatedData = $request->validate([
 				'order_id' => 'required|integer',
 				'status' => 'required|string|in:pending,delivering,delivered,cancelled',
-				'message' => 'nullable|string'
+				'message' => 'nullable|string',
+				'lang' => 'nullable|string|in:en,vi',
 			]);
 
 			$orderId = $validatedData['order_id'];
-			$order = Order::findOrFail($orderId);
+			$order = Order::with('voucher')->findOrFail($orderId);
 
 			// Check if the user has permission to update this order
 			$user = Auth::user();
@@ -267,12 +384,68 @@ class OrderController extends Controller
 				return response()->json(['message' => 'Unauthorized to update this order'], 403);
 			}
 
+			if ($validatedData['status'] === 'delivered') {
+				// If the order is marked as delivered, set the payment date and mark as paid
+				if ($order->order_payment_method === Constants::PAYMENT_METHOD_COD) {
+					$order->order_payment_date = now();
+					$order->order_deliver_time = now();
+					$order->order_is_paid = true;
+				}
+				$order->save();
+			} else if ($validatedData['status'] === 'cancelled') {
+				// Cannot cancel an order that is not pending
+				if (in_array($order->order_status, ['delivering', 'delivered', 'cancelled'])) {
+					return response()->json([
+						'message' => 'Cannot cancel order that is not pending',
+						'code' => 'TOO_LATE_TO_CANCEL'
+					], 422);
+				}
+
+				if ($order->order_payment_method === Constants::PAYMENT_METHOD_MOMO) {
+					// If the order was paid via Momo, refund logic should be implemented here
+					// For now, we just log it
+					Log::info('Order cancelled with Momo payment, refund logic not implemented yet');
+
+					// Revert the stock quantities for the cancelled order items
+					$order_items = $order->order_items()->get();
+					$order_items->each(function ($item) {
+						$product = $item->product;
+						if ($product) {
+							$product->product_stock_quantity += $item->order_items_quantity;
+							$product->save();
+						}
+					});
+					if ($order->voucher) {
+						$voucher_rules = $order->voucher->voucherRules()->get();
+						$this->unapplyVoucher($order->voucher, $voucher_rules, $order, $order->order_items, true);
+					}
+
+					// Refund momo money to customer
+					$momoService = app(MomoPaymentService::class);
+					$refundResult = $momoService->refundPaymentForOrder(
+						$order->order_id,
+						$validatedData['language'] ?? 'vi',
+					);
+
+					if (!isset($refundResult['success']) || $refundResult['success'] !== true) {
+						$errCode = $refundResult['code'] ?? 'unknown';
+						Log::error("Failed to refund Momo payment for order {$order->order_id}");
+						return response()->json([
+							'message' => "Failed to refund Momo payment (error code {$errCode})",
+							'code' => 'REFUND_FAILED',
+						], 500);
+					}
+
+					// Update order is paid status
+					$order->order_is_paid = false;
+				}
+			}
+
 			// Update the order status
 			$result = $order->updateStatus(
 				$validatedData['status'],
 				$validatedData['message'] ?? null
 			);
-
 			if ($result) {
 				return response()->json([
 					'success' => true,
@@ -353,9 +526,12 @@ class OrderController extends Controller
 				'order_id' => 'required|integer'
 			]);
 
-			$orderId = $validated['order_id'];
-			$order = Order::with(relations: ['order_items.product'])->findOrFail($orderId);
 			$user = Auth::user();
+			$orderId = $validated['order_id'];
+			$order = Order::with([
+				'order_items.product.product_images',
+				'voucher'
+			])->findOrFail($orderId);
 
 			// Check if the user has permission to view this order
 			$isAllowedToView = $user->user_id === $order->user_id || $user->role_type === 1;
@@ -363,32 +539,19 @@ class OrderController extends Controller
 				return response()->json(['message' => 'Unauthorized to view this order'], 403);
 			}
 
-			$order = Order::with([
-				'order_items.product.product_images'
-			])->findOrFail($orderId);
+			// Calculate voucher discount value
+			if ($order->voucher && $order->voucher->voucher_type != 'gift_product') {
+				$discountValue = VoucherController::calculateDiscountValue(
+					$order->voucher,
+					$order->order_provisional_price,
+					$order->order_deliver_cost
+				);
+				$order->voucher->setAttribute('discount_value', $discountValue);
+			} else if ($order->voucher) {
+				$order->voucher->setAttribute('discount_value', 0);
+			}
 
-			// return response()->json([
-			// 	'success' => true,
-			// 	'order' => [
-			// 		'order_id' => $order->order_id,
-			// 		'status' => $order->order_status,
-			// 		'created_at' => $order->created_at,
-			// 		'updated_at' => $order->updated_at,
-			// 		'total_price' => $order->order_total_price,
-			// 		'items' => $order->order_items->map(function ($item) {
-			// 			return [
-			// 				'product_id' => $item->product_id,
-			// 				'product_name' => $item->product->product_name,
-			// 				'quantity' => $item->order_items_quantity,
-			// 				'size' => $item->order_items_size,
-			// 				'unit_price' => $item->order_items_unitprice,
-			// 				'discount_amount' => $item->order_items_discounted_amount,
-			// 			];
-			// 		})
-			// 	]
-			// ]);
 			return response()->json($order);
-
 		} catch (\Illuminate\Validation\ValidationException $e) {
 			return response()->json(['message' => $e->getMessage()], 400);
 		} catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -396,6 +559,71 @@ class OrderController extends Controller
 		} catch (Exception $e) {
 			Log::error('Failed to get order details: ' . $e->getMessage());
 			return response()->json(['message' => 'Failed to get order details'], 500);
+		}
+	}
+
+	public function getOrderHistory(Request $request)
+	{
+		try {
+			$validated = $request->validate([
+				'offset' => 'nullable|integer|min:0',
+				'limit' => 'nullable|integer|min:1|max:100'
+			]);
+
+			$offset = $validated['offset'] ?? 0;
+			$limit = $validated['limit'] ?? 10;
+			$user = Auth::user();
+
+			// Get orders with pagination
+			$orders = Order::where('user_id', $user->user_id)
+				->with(['order_items.product.product_images', 'order_feedbacks'])
+				->orderBy('created_at', 'desc')
+				->offset($offset)
+				->limit($limit + 1) // Get one extra to check if there are more
+				->get();
+
+			// Check if there are more orders
+			$hasMore = $orders->count() > $limit;
+			if ($hasMore) {
+				$orders->pop(); // Remove the extra order
+			}
+
+			$orderHistory = $orders->map(function ($order) {
+				return [
+					'order_id' => $order->order_id,
+					'status' => $order->order_status,
+					'created_at' => $order->created_at,
+					'total_price' => $order->order_total_price,
+					'payment_method' => $order->order_payment_method,
+					'deliver_address' => $order->order_deliver_address,
+					'items_count' => $order->order_items->count(),
+					'did_feedback' => $order->order_feedbacks->isNotEmpty(),
+					'items' => $order->order_items->map(callback: function ($item) {
+						return [
+							'product_id' => $item->product_id,
+							'product_name' => $item->product->product_name,
+							'product_category_id' => $item->product->category_id,
+							'quantity' => $item->order_items_quantity,
+							'size' => $item->order_items_size,
+							'unit_price' => $item->order_items_unitprice,
+							'image_url' => $item->product->product_images->first()->product_image_url ?? null,
+						];
+					})
+				];
+			});
+
+			return response()->json([
+				'orders' => $orderHistory,
+				'has_more' => $hasMore,
+				'offset' => $offset,
+				'limit' => $limit
+			]);
+
+		} catch (\Illuminate\Validation\ValidationException $e) {
+			return response()->json(['message' => $e->getMessage()], 400);
+		} catch (Exception $e) {
+			Log::error('Failed to get order history: ' . $e->getMessage());
+			return response()->json(['message' => 'Failed to get order history'], 500);
 		}
 	}
 }

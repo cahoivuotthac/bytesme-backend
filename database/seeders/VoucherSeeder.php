@@ -17,8 +17,8 @@ class VoucherSeeder extends Seeder
 			'voucher_type' => 'percentage',
 			'voucher_fields' => 'new_customer',
 			'voucher_description' => 'Giảm ngay 10% cho lần mua sắm đầu tiên',
-			'voucher_start_date' => now()->subDays(50),
-			'voucher_end_date' => now()->addDays(60),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_value' => 10,
 		]);
 
@@ -28,8 +28,8 @@ class VoucherSeeder extends Seeder
 			'voucher_type' => 'cash',
 			'voucher_fields' => 'shop_related',
 			'voucher_description' => 'Giảm 50.000 ₫ với đơn hàng trên 500.000 ₫',
-			'voucher_start_date' => now(),
-			'voucher_end_date' => now()->addDays(15),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_value' => 50000,
 		]);
 
@@ -39,8 +39,8 @@ class VoucherSeeder extends Seeder
 			'voucher_type' => 'percentage',
 			'voucher_fields' => 'holiday',
 			'voucher_description' => 'Tết Dương Lịch 2025 - Giảm sốc 25% cho toàn bộ đơn hàng',
-			'voucher_start_date' => now()->addDays(5),
-			'voucher_end_date' => now()->addDays(55),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_value' => 25,
 		]);
 
@@ -50,8 +50,8 @@ class VoucherSeeder extends Seeder
 			'voucher_type' => 'percentage',
 			'voucher_fields' => 'holiday',
 			'voucher_description' => 'Noel giảm giá 24% cho mọi đơn hàng!',
-			'voucher_start_date' => now()->addDays(5),
-			'voucher_end_date' => now()->addDays(35),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_value' => 24,
 		]);
 
@@ -61,8 +61,8 @@ class VoucherSeeder extends Seeder
 			'voucher_type' => 'cash',
 			'voucher_fields' => 'freeship',
 			'voucher_description' => 'Miễn phí vận chuyển cho đơn hàng từ 300.000 ₫',
-			'voucher_start_date' => now()->addDays(1),
-			'voucher_end_date' => now()->addDays(45),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_value' => 30000, // Maximum shipping fee covered
 		]);
 
@@ -72,8 +72,8 @@ class VoucherSeeder extends Seeder
 			'voucher_type' => 'gift_product',
 			'voucher_fields' => 'holiday',
 			'voucher_description' => 'Mua 1 tặng 1 mừng xuân Ất Tỵ',
-			'voucher_start_date' => now(),
-			'voucher_end_date' => now()->addDays(30),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_value' => '3:1' // 3:1 means you get 1 unit of product with product_id = 3 for free
 		]);
 
@@ -83,8 +83,8 @@ class VoucherSeeder extends Seeder
 			'voucher_type' => 'gift_product',
 			'voucher_fields' => 'shop_related',
 			'voucher_description' => 'Mua 2 Donut bất kỳ, nhận ngay 1 donut miễn phí',
-			'voucher_start_date' => now(),
-			'voucher_end_date' => now()->addDays(30),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_value' => '1:1:Standard,5:1:M' // 1:1:L means you get 1 unit of size 'L' of product with product_id = 1 for free, and 5:1 means you get 1 unit of sizes 'M' of product with product_id = 5 for free
 		]);
 
@@ -96,8 +96,8 @@ class VoucherSeeder extends Seeder
 			'voucher_name' => 'Ưu đãi sinh nhật 15%',
 			'voucher_description' => 'Giảm 15% tối đa 50K',
 			'voucher_fields' => 'birthday_gift',
-			'voucher_start_date' => Carbon::parse('2024-05-01T00:00:00Z'),
-			'voucher_end_date' => Carbon::parse('2024-06-30T23:59:59Z'),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_type' => 'percentage',
 			'voucher_value' => 15,
 		]);
@@ -108,8 +108,8 @@ class VoucherSeeder extends Seeder
 			'voucher_name' => 'Miễn phí vận chuyển 25K',
 			'voucher_description' => 'Miễn phí vận chuyển đến 25K',
 			'voucher_fields' => 'freeship',
-			'voucher_start_date' => Carbon::parse('2024-01-01T00:00:00Z'),
-			'voucher_end_date' => Carbon::parse('2024-12-31T23:59:59Z'),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_type' => 'cash',
 			'voucher_value' => 25000,
 		]);
@@ -120,8 +120,8 @@ class VoucherSeeder extends Seeder
 			'voucher_name' => 'Đặc quyền khách VIP 20%',
 			'voucher_description' => 'Giảm 20% tối đa 100K',
 			'voucher_fields' => 'loyal_customer',
-			'voucher_start_date' => Carbon::parse('2024-04-01T00:00:00Z'),
-			'voucher_end_date' => Carbon::parse('2024-07-31T23:59:59Z'),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_type' => 'percentage',
 			'voucher_value' => 20,
 		]);
@@ -132,8 +132,8 @@ class VoucherSeeder extends Seeder
 			'voucher_name' => 'Ưu đãi khách hàng mới 30K',
 			'voucher_description' => 'Giảm 30K cho đơn đầu tiên',
 			'voucher_fields' => 'new_customer',
-			'voucher_start_date' => Carbon::parse('2024-01-01T00:00:00Z'),
-			'voucher_end_date' => Carbon::parse('2024-12-31T23:59:59Z'),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_type' => 'cash',
 			'voucher_value' => 30000,
 		]);
@@ -144,8 +144,8 @@ class VoucherSeeder extends Seeder
 			'voucher_name' => 'Khuyến mãi cuối tuần 10%',
 			'voucher_description' => 'Giảm 10% tối đa 45K vào T7, CN',
 			'voucher_fields' => 'shop_related',
-			'voucher_start_date' => Carbon::parse('2024-06-01T00:00:00Z'),
-			'voucher_end_date' => Carbon::parse('2024-08-31T23:59:59Z'),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_type' => 'percentage',
 			'voucher_value' => 10,
 		]);
@@ -156,8 +156,8 @@ class VoucherSeeder extends Seeder
 			'voucher_name' => 'Khuyến mãi tháng 7 giảm 15K',
 			'voucher_description' => 'Giảm 15K không điều kiện',
 			'voucher_fields' => 'shop_related',
-			'voucher_start_date' => Carbon::parse('2024-07-01T00:00:00Z'),
-			'voucher_end_date' => Carbon::parse('2024-07-31T23:59:59Z'),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_type' => 'cash',
 			'voucher_value' => 15000,
 		]);
@@ -168,8 +168,8 @@ class VoucherSeeder extends Seeder
 			'voucher_name' => 'Tiết kiệm combo 25K',
 			'voucher_description' => 'Giảm 25K cho combo từ 2 món',
 			'voucher_fields' => 'shop_related',
-			'voucher_start_date' => Carbon::parse('2024-05-15T00:00:00Z'),
-			'voucher_end_date' => Carbon::parse('2024-09-15T23:59:59Z'),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_type' => 'cash',
 			'voucher_value' => 25000,
 		]);
@@ -180,8 +180,8 @@ class VoucherSeeder extends Seeder
 			'voucher_name' => 'Miễn phí vận chuyển cao cấp 40K',
 			'voucher_description' => 'Miễn phí vận chuyển đến 40K',
 			'voucher_fields' => 'freeship',
-			'voucher_start_date' => Carbon::parse('2024-06-01T00:00:00Z'),
-			'voucher_end_date' => Carbon::parse('2024-06-30T23:59:59Z'),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_type' => 'cash',
 			'voucher_value' => 40000,
 		]);
@@ -192,8 +192,8 @@ class VoucherSeeder extends Seeder
 			'voucher_name' => 'Ưu đãi thành viên thân thiết 8%',
 			'voucher_description' => 'Giảm 8% không giới hạn',
 			'voucher_fields' => 'loyal_customer',
-			'voucher_start_date' => Carbon::parse('2024-01-01T00:00:00Z'),
-			'voucher_end_date' => Carbon::parse('2024-12-31T23:59:59Z'),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_type' => 'percentage',
 			'voucher_value' => 8,
 		]);
@@ -204,8 +204,8 @@ class VoucherSeeder extends Seeder
 			'voucher_name' => 'Flash Sale 35%',
 			'voucher_description' => 'Giảm sốc 35% trong 3 giờ',
 			'voucher_fields' => 'shop_related',
-			'voucher_start_date' => Carbon::parse('2025-05-20T16:00:00Z'), // 3-hour flash sale
-			'voucher_end_date' => Carbon::parse('2025-05-20T19:00:00Z'),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_type' => 'percentage',
 			'voucher_value' => 35,
 		]);
@@ -216,8 +216,8 @@ class VoucherSeeder extends Seeder
 			'voucher_name' => 'Combo bữa ăn',
 			'voucher_description' => 'Giảm 30K khi mua đủ bộ bữa ăn',
 			'voucher_fields' => 'shop_related',
-			'voucher_start_date' => Carbon::parse('2025-05-01T00:00:00Z'),
-			'voucher_end_date' => Carbon::parse('2025-08-31T23:59:59Z'),
+			'voucher_start_date' => now()->subDays(rand(10, 100)),
+			'voucher_end_date' => now()->addDays(rand(10, 100)),
 			'voucher_type' => 'cash',
 			'voucher_value' => 30000,
 		]);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Constants;
 use App\Models\Order;
 use App\Models\User;
+use App\Models\MomoServiceTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -142,6 +143,14 @@ class MomoPaymentController extends Controller
 			$order->order_status = 'pending'; // set order status to pending (previously was online_payment_pending)
 			$order->order_payment_date = now();
 			$order->save();
+
+			// Save the transaction in the Momo service store
+			MomoServiceTransaction::create(
+				[
+					'transaction_id' => $receivedData['transId'],
+					'order_id' => $order->order_id
+				],
+			);
 
 			// Send direct websocket broadcast
 			broadcast(new OnlinePaymentEvent(

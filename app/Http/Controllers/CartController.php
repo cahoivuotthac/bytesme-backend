@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\CartItem;
+use \App\Models\OrderItem;
 use App\Models\Wishlist;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -441,6 +442,99 @@ class CartController extends Controller
 			return response()->json([
 				'success' => false,
 				'message' => 'Failed to update cart item size'
+			], 500);
+		}
+	}
+
+	public function replicateOrder(Request $request)
+	{
+		try {
+			$request->validate([
+				'order_id' => 'required|integer|exists:orders,order_id'
+			]);
+		} catch (Exception $e) {
+			Log::info('Bad input data for replicateOrder', [
+				'error' => $e->getMessage()
+			]);
+			return response()->json([
+				'message' => 'Bad input data:' . $e->getMessage(),
+				'errors' => $e->getMessage()
+			], 400);
+		}
+
+		try {
+			$user = Auth::user();
+			$cartId = $user->cart_id;
+			$orderId = $request->input('order_id');
+
+			// Fetch the order items from OrderItem model
+			$orderItems = OrderItem::where('order_id', $orderId)->get();
+
+			if ($orderItems->isEmpty()) {
+				return response()->json([
+					'message' => 'No items found in the order'
+				], 404);
+			}
+
+			// Check if the cart already has items
+			$existingCartItems = CartItem::where('cart_id', $cartId)->exists();
+			if ($existingCartItems) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Cart already has items, cannot replicate order'
+				], 409);
+			}
+
+			// Check product stock for each item
+			foreach ($orderItems as $item) {
+				$product = Product::find($item->product_id);
+				if (!$product) {
+					return response()->json([
+						'message' => 'Product not found for ID: ' . $item->product_id,
+						'code' => 'PRODUCT_NOT_FOUND',
+						'extras' => [
+							'product_id' => $item->product_id,
+							'product_name' => 'Unknown Product',
+						]
+					], 404);
+				} else if ($product->getAttribute('product_stock_quantity') < $item->order_items_quantity) {
+					return response()->json([
+						'message' => 'Insufficient stock for product ID: ' . $item->product_id,
+						'code' => 'INSUFFICIENT_STOCK',
+						'extras' => [
+							'product_id' => $item->product_id,
+							'product_name' => $product ? $product->product_name : 'Unknown Product',
+						]
+					], 422);
+				}
+			}
+
+			// Create cart items from order items
+			foreach ($orderItems as $item) {
+				CartItem::create([
+					'cart_id' => $cartId,
+					'product_id' => $item->product_id,
+					'cart_items_quantity' => $item->order_items_quantity,
+					'cart_items_unitprice' => $item->order_items_unitprice,
+					'cart_items_size' => $item->order_items_size
+				]);
+			}
+
+			// Update cart items count
+			$cart = Cart::find($cartId);
+			$cart->cart_items_count = CartItem::where('cart_id', $cartId)
+				->sum('cart_items_quantity');
+			$cart->save();
+
+			return response()->json([
+				'success' => true,
+				'message' => 'Order replicated to cart successfully'
+			]);
+
+		} catch (Exception $e) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Failed to replicate order to cart'
 			], 500);
 		}
 	}

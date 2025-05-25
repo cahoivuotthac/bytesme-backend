@@ -67,6 +67,7 @@ Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
 		Route::post('/remove', [UserController::class, 'removeFromCart']);
 		Route::post('/update', [UserController::class, 'updateCart']);
 		Route::post('/checkout', [UserController::class, 'checkout']);
+		Route::post('/replicate-order', [CartController::class, 'replicateOrder']);
 	});
 
 	Route::group(['prefix' => 'wishlist'], function () {
@@ -108,6 +109,7 @@ Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
 
 Route::prefix('order')->middleware(['auth:sanctum'])->group(function () {
 	Route::get('/', [OrderController::class, 'getOrders']);
+	Route::get('/history', [OrderController::class, 'getOrderHistory']);
 	Route::post('/place', [OrderController::class, 'placeOrder']);
 	Route::post('/cancel', [OrderController::class, 'cancelOrder']);
 	Route::post('/feedback', [FeedbackController::class, 'sendFeedback']);

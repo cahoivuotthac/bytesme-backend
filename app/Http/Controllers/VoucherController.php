@@ -9,6 +9,7 @@ use App\Models\CartItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use \Carbon\Carbon;
 
 
 class VoucherController extends Controller
@@ -19,9 +20,24 @@ class VoucherController extends Controller
 	public static function isVoucherApplicable($voucher, iterable $cartItems)
 	{
 		// Check voucher start date and end date
-		if ($voucher->voucher_start_date > now()) {
+		$startDate = Carbon::createFromFormat('Y-m-d H:i:s', $voucher->voucher_start_date);
+		$endDate = Carbon::createFromFormat('Y-m-d H:i:s', $voucher->voucher_end_date);
+		$now = now();
+
+		Log::debug('Voucher ID: ', [$voucher->voucher_id]);
+		Log::debug('Voucher start date:', [$startDate]);
+		Log::debug('Voucher end date:', [$endDate]);
+		Log::debug('Current date:', [$now]);
+
+		if ($startDate->greaterThan($now)) {
+			if ($voucher->voucher_id === 58) {
+				Log::debug('Voucher is not applicable yet (start date in the future)');
+			}
 			return false;
-		} else if ($voucher->voucher_end_date < now()) {
+		} else if ($endDate->lessThan($now)) {
+			if ($voucher->voucher_id === 58) {
+				Log::debug('Voucher is expired (end date in the past)');
+			}
 			return false;
 		}
 
@@ -39,12 +55,14 @@ class VoucherController extends Controller
 					$orderCount = Auth::user()->orders()->count();
 					Log::debug('Order count:', [$orderCount]);
 					if ($orderCount > 0) {
+						Log::debug('Voucher ' . $voucher->voucher_id . ' is not applicable (not first order)');
 						return false;
 					}
 					break;
 
 				case 'min_bill_price':
 					if ($subtotal < (int) $rule->voucher_rule_value) {
+						Log::debug('Voucher ' . $voucher->voucher_id . ' is not applicable (not reached minimum bill price)');
 						return false;
 					}
 					break;
@@ -63,6 +81,7 @@ class VoucherController extends Controller
 					// Check if at least one item from each category is present
 					foreach ($validCategoryIds as $validCategoryId) {
 						if (!in_array($validCategoryId, $categoryIds)) {
+							Log::debug('Voucher ' . $voucher->voucher_id . ' is not applicable (not in required categories)');
 							return false;
 						}
 					}
@@ -97,6 +116,7 @@ class VoucherController extends Controller
 
 						// If the product isn't in cart or doesn't have enough quantity, voucher isn't applicable
 						if (!$productInCart || !$sufficientQty) {
+							Log::debug('Voucher ' . $voucher->voucher_id . ' is not applicable (product not in cart or insufficient quantity)');
 							return false; // Voucher not applicable (early return)
 						}
 					}
@@ -105,6 +125,7 @@ class VoucherController extends Controller
 				case 'remaining_quantity':
 					$remainingQuantity = (int) $rule->voucher_rule_value;
 					if ($remainingQuantity <= 0) {
+						Log::debug('Voucher ' . $voucher->voucher_id . ' is not applicable (no remaining quantity)');
 						return false; // No more vouchers available
 					}
 					break;
@@ -113,11 +134,14 @@ class VoucherController extends Controller
 					$requiredItemCount = (int) $rule->voucher_rule_value;
 					$cartItemCount = count($cartItems);
 					if ($cartItemCount < $requiredItemCount) {
+						Log::debug('Voucher ' . $voucher->voucher_id . ' is not applicable (not enough items in cart)');
 						return false;
 					}
 					break;
 			}
 		}
+
+		Log::debug('Voucher ' . $voucher->voucher_id . ' IS APPLICABLE');
 
 		return true;
 	}
@@ -248,26 +272,39 @@ class VoucherController extends Controller
 			$request->validate([
 				'selected_item_ids' => 'string|required', // A list of product_id, delimited by commas
 				'voucher_code' => 'string|nullable',
+				'offset' => 'integer|min:0|nullable',
+				'limit' => 'integer|min:1|max:100|nullable'
 			]);
 		} catch (Exception $e) {
 			Log::error('Invalid selected items ID list input:', [$e->getMessage()]);
 			return response()->json(['message' => 'Invalid selected items'], 400);
 		}
 
-		$selectedItemIds = array_map('intval', array: explode(',', $request->input('selected_item_ids')));
+		$selectedItemIds = array_map('intval', explode(',', $request->input('selected_item_ids')));
 		Log::info('Selected items ID list:', [$selectedItemIds]);
+
+		$offset = $request->input('offset', 0);
+		$limit = $request->input('limit', 10);
 
 		// Fetch vouchers for the user
 		if ($request->input('voucher_code')) {
 			$vouchers = Voucher::where('voucher_code', $request->input('voucher_code'))
 				->with('voucherRules')
 				->get();
+			$hasMore = false;
 		} else {
 			$vouchers = Voucher::with('voucherRules')
-				->offset($request->input('offset', default: 0))
-				->limit($request->input('limit', 10))
 				->orderBy('voucher_start_date', 'desc') // Newest first
+				->offset($offset)
+				->limit($limit)
 				->get();
+
+			// Determine if there are more vouchers beyond current page
+			$hasMore = Voucher::with('voucherRules')
+				->orderBy('voucher_start_date', 'desc')
+				->offset($offset + $limit)
+				->limit(1)
+				->exists();
 		}
 
 		$cart = Auth::user()->cart()->with([
@@ -306,12 +343,16 @@ class VoucherController extends Controller
 			// Create a new array with the additional properties
 			$voucherArray = $voucher->toArray();
 			$voucherArray['is_applicable'] = $isApplicable;
+			Log::debug('Voucher ' . $voucherArray['voucher_id'] . ' applicable?: ', [$voucherArray['is_applicable']]);
 			$voucherArray['discount_value'] = $discountValue;
 
 			return $voucherArray;
 		});
 
-		return response()->json($processedVouchers);
+		return response()->json([
+			'vouchers' => $processedVouchers,
+			'has_more' => $hasMore,
+		]);
 	}
 
 	public function getVoucherGiftProducts(Request $request)

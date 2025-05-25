@@ -276,6 +276,7 @@ class AuthController extends Controller
 		}
 
 		try {
+			Log::debug('Trying to fetch user data from social');
 			$socialUser = Socialite::driver($social)
 				->stateless()
 				->userFromToken($request->input('access_token'));
@@ -328,7 +329,6 @@ class AuthController extends Controller
 				'is_new_user' => $isNewUser, // notify the client that this is a new user to ask for additional info
 				'token' => $token
 			]);
-
 		} catch (Exception $me) {
 			DB::rollBack();
 			Log::error("MySQL error in social login: " . $me->getMessage());

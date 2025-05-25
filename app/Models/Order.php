@@ -194,6 +194,11 @@ class Order extends Model
 		return $this->hasMany(OrderItem::class, 'order_id', 'order_id');
 	}
 
+	public function order_feedbacks(): HasMany
+	{
+		return $this->hasMany(OrderFeedback::class, 'order_id', 'order_id');
+	}
+
 	/**
 	 * Update the order status and send notification
 	 * 
@@ -203,11 +208,8 @@ class Order extends Model
 	 */
 	public function updateStatus(string $status, string $message = null): bool
 	{
-		$oldStatus = $this->order_status;
 		$this->order_status = $status;
-
 		$result = $this->save();
-
 		return $result;
 	}
 }
