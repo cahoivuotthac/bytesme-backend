@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use App\Models\Product;
 
 class ProductController extends Controller
@@ -253,5 +254,49 @@ class ProductController extends Controller
 				'message' => 'Error when fetching related products'
 			], 500);
 		}
+	}
+
+	public function searchProductsRag(Request $request)
+	{
+		try {
+
+			$request->validate([
+				'query' => 'required|string|max:255',
+			]);
+		} catch (Exception $e) {
+			Log::info('searchProductsRag error: ' . $e->getMessage());
+			return response()->json([
+				'message' => 'Bad input data: ' . $e->getMessage(),
+			], 400);
+		}
+
+		$query = $request->input('query');
+
+		// Forward request to Flask API (BytesMe Intelligence service)
+		$baseUrl = config('services.bytesme_intelligence.base_url', 'http://localhost:5000');
+		$response = Http::withHeaders([
+			'Content-Type' => 'application/json',
+		])
+			->withOptions([
+				'stream' => true,
+				'timeout' => 120,
+				'http_errors' => false, // Prevent exceptions on HTTP errors
+			])
+			->get("{$baseUrl}/product/search/rag", [
+				'query' => $query
+			]);
+
+		// Stream response back to client and log the full LLM output
+		return response()->stream(function () use ($response) {
+			$stream = $response->getBody();
+
+			while (!$stream->eof()) {
+				$chunk = $stream->read(1024);
+				echo $chunk;
+				flush(); // Send output immediately
+			}
+
+			$stream->close();
+		}, 200, ['Content-Type' => 'text/event-stream']);
 	}
 }

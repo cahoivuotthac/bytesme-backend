@@ -41,6 +41,10 @@ return [
 		'secret_key' => env('MOMO_SECRET_KEY'),
 	],
 
+	'bytesme_intelligence' => [
+		'base_url' => env('BYTESME_INTELLIGENCE_BASE_URL'),
+	],
+
 	'google' => [
 		'client_id' => env('GOOGLE_CLIENT_ID'),
 		'client_secret' => env('GOOGLE_CLIENT_SECRET'),

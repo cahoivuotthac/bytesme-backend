@@ -222,52 +222,40 @@ class OrderController extends Controller
 		}
 
 		// Handle voucher type gift_product specifically
-		if ($voucher->voucher_type === 'gift_product') {
-			Log::info('Removing gift products from order items:', [$orderItems]);
+		// if ($voucher->voucher_type === 'gift_product') {
+		// 	Log::info('Removing gift products from order items:', [$orderItems]);
 
-			$giftProducts = VoucherController::parseGiftProductValue($voucher->voucher_value);
-			// Remove gift products from order items
-			foreach ($giftProducts as $giftProduct) {
-				// Find and remove gift products from order items
-				foreach ($orderItems as $index => $item) {
-					if ($item['product_id'] == $giftProduct['product_id'] && $item['order_items_size'] == $giftProduct['size']) {
-						// If quantity matches exactly, remove the item completely
-						if ($item['order_items_quantity'] == $giftProduct['quantity']) {
-							unset($orderItems[$index]);
-						} else {
-							// Otherwise, decrease the quantity
-							$item['order_items_quantity'] -= $giftProduct['quantity'];
-						}
+		// 	$giftProducts = VoucherController::parseGiftProductValue($voucher->voucher_value);
+		// 	// Remove gift products from order items
+		// 	foreach ($giftProducts as $giftProduct) {
+		// 		// Find and remove gift products from order items
+		// 		foreach ($orderItems as $index => $item) {
+		// 			if ($item['product_id'] == $giftProduct['product_id'] && $item['order_items_size'] == $giftProduct['size']) {
+		// 				// If quantity matches exactly, remove the item completely
+		// 				if ($item['order_items_quantity'] == $giftProduct['quantity']) {
+		// 					unset($orderItems[$index]);
+		// 				} else {
+		// 					// Otherwise, decrease the quantity
+		// 					$item['order_items_quantity'] -= $giftProduct['quantity'];
+		// 				}
 
-						// Restore stock quantity for gift product
-						$product = \App\Models\Product::find($giftProduct['product_id']);
-						if ($product) {
-							$product->product_stock_quantity += $giftProduct['quantity'];
-							$product->save();
-						}
-						break;
-					}
-				}
-			}
+		// 				// Restore stock quantity for gift product
+		// 				$product = \App\Models\Product::find($giftProduct['product_id']);
+		// 				if ($product) {
+		// 					$product->product_stock_quantity += $giftProduct['quantity'];
+		// 					$product->save();
+		// 				}
+		// 				break;
+		// 			}
+		// 		}
+		// 	}
 
-			// Re-index the array after removing items
-			$orderItems = array_values($orderItems);
+		// Re-index the array after removing items
+		// $orderItems = array_values($orderItems);
 
 
-			Log::info('Gift products removed from order items:', [$orderItems]);
-		}
-
-		// Handle other voucher types
-		else {
-			switch ($voucher->voucher_fields) {
-				case 'freeship':
-					$order->order_deliver_cost += $voucher->voucher_value;
-					break;
-				default:
-					$order->order_total_price += $voucher->voucher_value;
-					break;
-			}
-		}
+		// Log::info('Gift products removed from order items:', [$orderItems]);
+		// }
 
 		if ($saveImmediately) {
 			foreach ($voucher_rules as $rule) {
@@ -577,7 +565,7 @@ class OrderController extends Controller
 			// Get orders with pagination
 			$orders = Order::where('user_id', $user->user_id)
 				->with(['order_items.product.product_images', 'order_feedbacks'])
-				->orderBy('created_at', 'desc')
+				->orderBy('updated_at', 'desc')
 				->offset($offset)
 				->limit($limit + 1) // Get one extra to check if there are more
 				->get();
