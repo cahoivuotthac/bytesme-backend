@@ -51,16 +51,16 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
 });
 
 Route::prefix('product')->middleware('auth:sanctum')->group(function () {
-	Route::get('/homepage-products', [ProductController::class, 'getHomepageProducts']);
+	Route::get('/homepage', [ProductController::class, 'getHomepageProducts']);
 	Route::get('/category', [ProductController::class, 'getProductsByCategory']);
 	Route::get('/details', [ProductController::class, 'getProductDetails']);
 	// Test get products feedback
 	Route::get('/feedbacks', [ProductController::class, 'getProductFeedbacks']);
 	Route::get('/search/text', [ProductController::class, 'searchProductsText']); // Normal sql text search (fall-back route)
-	Route::get('/search/semantic', [ProductController::class, 'searchProductsSemantic']);
+	Route::get('/search/semantics', [ProductController::class, 'searchProductsSemantics']);
 	Route::get('/search/rag', [ProductController::class, 'searchProductsRag']);
-	Route::get('/related/semantic', [ProductController::class, 'getRelatedProductsSemantic']);
 	Route::get('/related/co-occur', [ProductController::class, 'getRelatedProductsCoOccur']); // Co-occurence based on orders
+	Route::get('/related/semantics', [ProductController::class, 'getRelatedProductsSemantics']);
 });
 
 // Use sanctum auth middleware for user routes

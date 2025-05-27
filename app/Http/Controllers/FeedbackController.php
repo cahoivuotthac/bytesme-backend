@@ -43,6 +43,16 @@ class FeedbackController extends Controller
 				'num_star' => $validatedData['rating'],
 			]);
 
+			// Update products' total ratings and overall stars
+			$orderFeedback->orderItems()->each(function ($item) use ($validatedData) {
+				$item->product->increment('product_total_ratings', 1);
+				$item->product->update([
+					'product_overall_stars' => $item->product->product_total_ratings > 0 ?
+						($item->product->product_overall_stars * ($item->product->product_total_ratings - 1) + $validatedData['rating']) /
+						$item->product->product_total_ratings : $validatedData['rating']
+				]);
+			});
+
 			Log::debug('Order feedback created: ' . json_encode($orderFeedback));
 
 			// Handle improve tags

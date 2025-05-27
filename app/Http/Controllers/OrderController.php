@@ -149,10 +149,11 @@ class OrderController extends Controller
 			$this->applyVoucher($voucher, $voucher_rules, $order, $orderItems, true);
 		}
 
-		// Decrease product stock quantities
+		// Decrease product stock quantities and product total orders (total sold)
 		foreach ($cartItems as $item) {
 			$product = $item->product;
 			$product->product_stock_quantity -= $item->cart_items_quantity;
+			$product->product_total_orders += $item->cart_items_quantity;
 			$product->save();
 		}
 
@@ -394,12 +395,18 @@ class OrderController extends Controller
 					// For now, we just log it
 					Log::info('Order cancelled with Momo payment, refund logic not implemented yet');
 
-					// Revert the stock quantities for the cancelled order items
+					// Revert the stock quantities and total_orders for the cancelled order items
 					$order_items = $order->order_items()->get();
 					$order_items->each(function ($item) {
 						$product = $item->product;
 						if ($product) {
 							$product->product_stock_quantity += $item->order_items_quantity;
+							if ($product->product_total_orders >= $item->order_items_quantity) {
+								$product->product_total_orders -= $item->order_items_quantity;
+							} else {
+								// Prevent negative total orders
+								$product->product_total_orders = 0;
+							}
 							$product->save();
 						}
 					});
