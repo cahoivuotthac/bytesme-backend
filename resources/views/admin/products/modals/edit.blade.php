@@ -24,16 +24,8 @@
 							<div class="form-group">
 								<label class="form-label vintage-label">Tên sản phẩm</label>
 								<input type="text" class="form-control vintage-input inactive-muted-text" id="editName"
-									name="name">
+									name="product_name">
 							</div>
-						</div>
-					</div>
-
-					<div class="mb-4">
-						<div class="form-group">
-							<label class="form-label vintage-label">Mô tả ngắn</label>
-							<textarea class="form-control vintage-textarea inactive-muted-text"
-								id="editShortDescription" name="short_description" rows="2"></textarea>
 						</div>
 					</div>
 
@@ -41,77 +33,66 @@
 						<div class="form-group">
 							<label class="form-label vintage-label">Mô tả chi tiết</label>
 							<textarea class="form-control vintage-textarea inactive-muted-text" id="editDescription"
-								name="detailed_description" rows="3"></textarea>
+								name="product_description" rows="3"></textarea>
 						</div>
 					</div>
 
 					<div class="row">
 						<div class="col-md-4 mb-3">
 							<div class="form-group">
-								<label class="form-label vintage-label">Giá gốc</label>
-								<div class="input-group">
-									<input type="number" name="price"
-										class="form-control vintage-input inactive-muted-text" id="editPrice">
-									<span class="input-group-text vintage-addon ">đ</span>
-								</div>
+								<label class="form-label vintage-label">Danh mục</label>
+								<select class="form-select vintage-input" id="editCategorySelect" name="category_id">
+									<option value="">Chọn danh mục</option>
+								</select>
 							</div>
 						</div>
 						<div class="col-md-4 mb-3">
 							<div class="form-group">
 								<label class="form-label vintage-label">Giảm giá</label>
 								<div class="input-group">
-									<input type="number" name="discount_percentage"
+									<input type="number" name="product_discount_percentage"
 										class="form-control vintage-input inactive-muted-text" id="editDiscount" min="0"
-										max="100">
+										max="100" value="0">
 									<span class="input-group-text vintage-addon">%</span>
 								</div>
 							</div>
 						</div>
 						<div class="col-md-4 mb-3">
 							<div class="form-group">
-								<label class="form-label vintage-label">Số lượng tồn kho</label>
-								<input type="number" name="stock_quantity"
-									class="form-control vintage-input inactive-muted-text" id="editStock">
+								<label class="form-label vintage-label">Tồn kho tổng</label>
+								<input type="number" name="product_stock_quantity"
+									class="form-control vintage-input inactive-muted-text" id="editTotalStock">
 							</div>
 						</div>
 					</div>
 
-					<!-- Add new image management section -->
+					<!-- Sizes and Prices Section -->
 					<div class="mb-4">
 						<div class="form-group">
-							<label class="form-label vintage-label" id="imgCounter">Hình ảnh sản phẩm (tối đa 5)</label>
-							<input type="file" name="images[]" accept="image/*" multiple
-								class="form-control visually-hidden">
-							<div class="d-flex flex-wrap border-dashed" id="preview-image-container">
-								<!-- Images will be populated here -->
-								<!-- Add new image button -->
-								<div class="p-2" style="background-color: transparent;">
-									<div class="d-flex preview-image justify-content-center align-items-center border border-1 border-dark"
-										style="cursor: pointer; max-width: 40px !important;">
-										<span class="fs-3">+</span>
-									</div>
-								</div>
+							<div class="d-flex justify-content-between align-items-center mb-2">
+								<label class="form-label vintage-label">Kích thước và giá</label>
+								<button type="button" class="btn btn-sm btn-success" id="addSizePriceBtn">
+									<i class="mdi mdi-plus"></i> Thêm size
+								</button>
+							</div>
+							<div id="sizes-prices-container">
+								<!-- Size/price rows will be populated here -->
 							</div>
 						</div>
 					</div>
 
 					<div class="form-group mt-5">
-						<label class="form-label vintage-label" style="font-size: 1rem;">Chọn danh mục cho sản phẩm</label>
-						<div class="row mt-3">
-							<div class="col-md-6">
-								<label class="form-label vintage-label">Danh mục sản phẩm có sẵn</label>
-								<div id="available-categories" class="border p-2"
-									style="max-height:200px; overflow:auto;">
-									<!-- Dynamically populated with JS -->
+						<label class="form-label vintage-label" id="imgCounter">Hình ảnh sản phẩm (tối đa 5)</label>
+						<input type="file" name="images[]" accept="image/*" multiple
+							class="form-control visually-hidden">
+						<div class="d-flex flex-wrap border-dashed" id="preview-image-container">
+							<!-- Images will be populated here -->
+							<!-- Add new image button -->
+							<div class="p-2" style="background-color: transparent;">
+								<div class="d-flex preview-image justify-content-center align-items-center border border-1 border-dark"
+									style="cursor: pointer; max-width: 40px !important;">
+									<span class="fs-3">+</span>
 								</div>
-							</div>
-							<div class="col-md-6">
-								<label class="form-label vintage-label">Danh mục sản phẩm đã chọn</label>
-								<div id="selected-categories" class="border p-2"
-									style="max-height:200px; overflow:auto;">
-									<!-- Dynamically populated with JS -->
-								</div>
-								<input type="hidden" name="categories" id="editSelectedCategoriesInput" />
 							</div>
 						</div>
 					</div>

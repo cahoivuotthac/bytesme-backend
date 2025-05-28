@@ -61,6 +61,7 @@ class Product extends Model
 	];
 
 	protected $fillable = [
+		'product_id',
 		'product_type',
 		'product_code',
 		'product_name',
@@ -73,6 +74,7 @@ class Product extends Model
 		'product_stock_quantity',
 		'product_band',
 		'category_id',
+		'product_unit_price', // Add this field
 	];
 
 	public function order_items()
@@ -133,9 +135,11 @@ class Product extends Model
 	{
 		return Attribute::make(
 			get: function (mixed $value, array $attributes) {
-				$sizesPrices = json_decode($attributes['product_unit_price'], true);
-				$sizes = explode('|', $sizesPrices['product_sizes']);
-				return $sizes;
+				$unitPrice = json_decode($attributes['product_unit_price'] ?? '{}', true);
+				if (isset($unitPrice['product_sizes'])) {
+					return explode('|', $unitPrice['product_sizes']);
+				}
+				return [];
 			}
 		);
 	}
@@ -144,16 +148,17 @@ class Product extends Model
 	{
 		return Attribute::make(
 			get: function (mixed $value, array $attributes) {
-				$sizesPrices = json_decode($attributes['product_unit_price'], true);
-				Log::debug('SizesPrices in prices function: ', $sizesPrices);
-				$prices = explode('|', $sizesPrices['product_prices']);
-				Log::debug("Splitted prices: ", $prices);
-				$prices = array_map('intval', $prices);
-				return $prices;
+				$unitPrice = json_decode($attributes['product_unit_price'] ?? '{}', true);
+				Log::debug('UnitPrice in prices function: ', $unitPrice);
+				if (isset($unitPrice['product_prices'])) {
+					$prices = explode('|', $unitPrice['product_prices']);
+					Log::debug("Splitted prices: ", $prices);
+					return array_map('intval', $prices);
+				}
+				return [];
 			}
 		);
 	}
-
 
 	public function getClaimsDurationDays()
 	{

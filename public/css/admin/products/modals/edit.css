@@ -130,3 +130,45 @@
 	cursor: pointer;
 }
 /* End category item styles */
+
+/* Size/price management styles */
+.size-price-row {
+	background: #f8f9fa;
+	border-radius: 8px;
+	padding: 10px;
+	margin-bottom: 10px;
+}
+
+.size-price-row input {
+	border: 1px solid #d3d3c7;
+}
+
+.size-price-row .btn-danger {
+	background: #dc3545;
+	border: none;
+	padding: 0.5rem;
+	border-radius: 6px;
+}
+
+.size-price-row .btn-danger:hover {
+	background: #c82333;
+}
+
+#addSizePriceBtn {
+	background: #28a745;
+	border: none;
+	color: white;
+	padding: 0.5rem 1rem;
+	border-radius: 6px;
+	transition: all 0.3s ease;
+}
+
+#addSizePriceBtn:hover {
+	background: #218838;
+	transform: translateY(-1px);
+}
+
+#sizes-prices-container {
+	max-height: 300px;
+	overflow-y: auto;
+}

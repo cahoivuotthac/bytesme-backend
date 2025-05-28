@@ -7,7 +7,6 @@ $(document).ready(function () {
 		uploadedImgs = [];
 		uploadedImgs = $('#editProductModal input[name="images[]"]')[0].files;
 		uploadedImgs = Array.from(uploadedImgs);
-		updateSelectedCategoriesInput();
 		console.log('Modal loaded, syncing uploaded images:', uploadedImgs);
 	});
 
@@ -90,6 +89,9 @@ $(document).ready(function () {
 		uploadedImgs = [];
 		$('#preview-image-container').children().not(':last').remove();
 		$('#imgCounter').text('Hình ảnh sản phẩm (0/5)');
+		$('#sizes-prices-container').empty();
+		$('#editTotalStock').val('0');
+		$('#editCategorySelect').val('');
 	});
 
 	// Handle preview image click
@@ -103,16 +105,17 @@ $(document).ready(function () {
 		});
 	});
 
-	// Click to move category from available -> selected
-	$(document).on('click', '#available-categories .category-item', function () {
-		$('#selected-categories').append($(this));
-		updateSelectedCategoriesInput();
+	// Add size/price row
+	$(document).on('click', '#addSizePriceBtn', function() {
+		addSizePriceRow();
 	});
 
-	// Click to move category from selected -> available
-	$(document).on('click', '#selected-categories .category-item', function () {
-		$('#available-categories').append($(this));
-		updateSelectedCategoriesInput();
+	// Remove size/price row
+	$(document).on('click', '.remove-size-price', function() {
+		$(this).closest('.size-price-row').remove();
+		if ($('.size-price-row').length === 0) {
+			addSizePriceRow();
+		}
 	});
 });
 

@@ -68,6 +68,7 @@ Route::prefix('product')->middleware('auth:sanctum')->group(function () {
 	Route::get('/search/rag', [ProductController::class, 'searchProductsRag']);
 	Route::get('/related/co-occur', [ProductController::class, 'getRelatedProductsCoOccur']); // Co-occurence based on orders
 	Route::get('/related/semantics', [ProductController::class, 'getRelatedProductsSemantics']);
+	Route::get('/all-categories', [AdminProductController::class, 'getAllCategories']);
 });
 
 // Use sanctum auth middleware for user routes
@@ -345,6 +346,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 			Route::get('/{product_id}/details', [AdminProductController::class, 'getDetails'])->name('details');
 			Route::post('/{product_id}/update-field', [AdminProductController::class, 'updateField'])->name('updateField');
 			Route::put('/{product_id}/update', [AdminProductController::class, 'update'])->name('update');
+			Route::put('/', [AdminProductController::class, 'createProduct'])->name('createProduct');
 		});
 
 		// Admin vouchers routes
