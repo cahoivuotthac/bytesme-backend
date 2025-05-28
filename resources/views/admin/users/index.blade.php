@@ -245,7 +245,7 @@
                                                      class="user-avatar" alt="Avatar">
                                             </td>
                                             <td>
-                                                <div class="user-name">{{ $user->full_name }}</div>
+                                                <div class="user-name">{{ $user->name }}</div>
                                                 <div class="user-username">{{ $user->user_name }}</div>
                                             </td>
                                             <td>{{ $user->email }}</td>
