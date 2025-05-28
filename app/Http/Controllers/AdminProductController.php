@@ -336,4 +336,85 @@ class AdminProductController extends Controller
 			return redirect()->back()->with('error', 'Có lỗi khi thêm sản phẩm: ' . $e->getMessage());
 		}
 	}
+
+	public function getProductAnalytics()
+	{
+		try {
+			// Product inventory analytics
+			$totalProducts = Product::count();
+			$inStockProducts = Product::where('product_stock_quantity', '>', 10)->count();
+			$lowStockProducts = Product::whereBetween('product_stock_quantity', [1, 10])->count();
+			$outOfStockProducts = Product::where('product_stock_quantity', 0)->count();
+
+			// Category distribution
+			$categoryDistribution = Product::with('category')
+				->select('category_id', DB::raw('count(*) as count'))
+				->groupBy('category_id')
+				->get()
+				->map(function ($item) {
+					return [
+						'category_name' => $item->category->category_name ?? 'Unknown',
+						'count' => $item->count
+					];
+				});
+
+			// Top selling products
+			$topSellingProducts = Product::with(['product_images', 'category'])
+				->orderBy('product_total_orders', 'desc')
+				->limit(5)
+				->get()
+				->map(function ($product) {
+					return [
+						'name' => $product->product_name,
+						'total_orders' => $product->product_total_orders ?? 0,
+						'stock' => $product->product_stock_quantity,
+						'image' => $product->product_images->first()?->product_image_url,
+						'category' => $product->category->category_name ?? 'Unknown'
+					];
+				});
+
+			// Rating distribution
+			$ratingStats = Product::selectRaw('
+				COUNT(*) as total_products,
+				AVG(product_overall_stars) as avg_rating,
+				COUNT(CASE WHEN product_overall_stars >= 4.5 THEN 1 END) as excellent,
+				COUNT(CASE WHEN product_overall_stars >= 3.5 AND product_overall_stars < 4.5 THEN 1 END) as good,
+				COUNT(CASE WHEN product_overall_stars >= 2.5 AND product_overall_stars < 3.5 THEN 1 END) as average,
+				COUNT(CASE WHEN product_overall_stars < 2.5 AND product_overall_stars > 0 THEN 1 END) as poor,
+				COUNT(CASE WHEN product_overall_stars IS NULL OR product_overall_stars = 0 THEN 1 END) as no_rating
+			')->first();
+
+			// Monthly product additions
+			$monthlyAdditions = Product::selectRaw("
+				TO_CHAR(created_at, 'YYYY-MM') as month,
+				COUNT(*) as count
+			")
+				->where('created_at', '>=', now()->subMonths(12))
+				->groupBy('month')
+				->orderBy('month')
+				->get();
+
+			return response()->json([
+				'success' => true,
+				'data' => [
+					'inventory' => [
+						'total' => $totalProducts,
+						'in_stock' => $inStockProducts,
+						'low_stock' => $lowStockProducts,
+						'out_of_stock' => $outOfStockProducts
+					],
+					'category_distribution' => $categoryDistribution,
+					'top_selling' => $topSellingProducts,
+					'rating_stats' => $ratingStats,
+					'monthly_additions' => $monthlyAdditions
+				]
+			]);
+		} catch (\Exception $e) {
+			Log::error('AdminProductController@getProductAnalytics: ' . $e->getMessage());
+			return response()->json([
+				'success' => false,
+				'message' => 'Failed to fetch analytics'
+			], 500);
+		}
+	}
 }

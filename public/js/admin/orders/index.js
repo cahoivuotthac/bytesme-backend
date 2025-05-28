@@ -880,6 +880,7 @@ document.querySelectorAll(".change-status-btn").forEach(function (button) {
     button.addEventListener("click", function (event) {
         event.stopPropagation();
         const orderId = this.dataset.orderId;
+        const orderStatus = this.dataset.orderStatus;
 
         Swal.fire({
             title: "Xác nhận chuyển trạng thái?",
@@ -896,11 +897,44 @@ document.querySelectorAll(".change-status-btn").forEach(function (button) {
         }).then((result) => {
             if (result.isConfirmed) {
                 this.classList.add("btn-secondary");
-                updateOrderField(orderId, "order_status", "delivering");
+                updateOrderStatus(
+                    orderId,
+                    orderStatus === "pending" ? "delivering" : "delivered"
+                );
             }
         });
     });
 });
+
+function updateOrderStatus(orderId, status) {
+    fetch("/order/update-status", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')
+                .content,
+        },
+        body: JSON.stringify({
+            order_id: orderId,
+            status: status,
+        }),
+    })
+        .then((response) => response.json())
+        .then(async (data) => {
+            if (data.success) {
+                // Reload the page or update the cell content
+                showAlert("success", data.message);
+                await new Promise((r) => setTimeout(r, 2000));
+                window.location.reload();
+            } else {
+                console.error("Error:", data.message);
+                showAlert("error", data.message);
+            }
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+        });
+}
 
 function updateOrderField(orderId, field, value) {
     fetch("/admin/orders/update-field", {

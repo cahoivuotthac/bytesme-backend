@@ -461,7 +461,6 @@ class OrderController extends Controller
 					'message' => 'Failed to update order status'
 				], 500);
 			}
-
 		} catch (\Illuminate\Validation\ValidationException $e) {
 			return response()->json(['message' => $e->getMessage()], 400);
 		} catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {

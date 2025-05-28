@@ -188,6 +188,7 @@ class AdminOrderController extends Controller
 
 		// Update newestOrders to include order_items and products
 		$newestOrders = Order::where('order_status', 'pending')
+			->orWhere('order_status', 'delivering')
 			->where(function ($query) {
 				$query->where('order_payment_method', Constants::PAYMENT_METHOD_COD)
 					->orWhere(function ($query) {

@@ -61,8 +61,8 @@
 						<option value="expired">Hết hạn</option>
 					</select>
 					<select class="form-select me-2" id="searchType">
-						<option value="voucher_name">Tìm theo mã</option>
-						<option value="description">Tìm theo mô tả</option>
+						<option value="voucher_code">Tìm theo mã</option>
+						<option value="voucher_description">Tìm theo mô tả</option>
 					</select>
 					<input type="text" id="searchInput" class="form-control" 
 						placeholder="Tìm kiếm voucher...">
@@ -105,7 +105,7 @@
 						@foreach($vouchers as $voucher)
 							<tr class="voucher-row">
 								<td class="voucher-code">{{ $voucher->voucher_name }}</td>
-								<td>{{ $voucher->description }}</td>
+								<td>{{ $voucher->voucher_description }}</td>
 								<td>
 									@if ($voucher->voucher_type == 'percentage')
 										Coupon (%)

@@ -60,7 +60,79 @@
 					</h2>
 				</div>
 
-				<!-- Update card designs -->
+				<!-- Analytics Dashboard -->
+				<div class="analytics-dashboard">
+					<!-- Metrics Cards -->
+					<div class="metrics-grid" id="metricsGrid">
+						<div class="metric-card">
+							<div class="chart-loading">
+								<div class="loading-spinner"></div>
+								Đang tải dữ liệu...
+							</div>
+						</div>
+					</div>
+
+					<!-- Charts Grid -->
+					<div class="charts-grid">
+						<div class="chart-container">
+							<div class="chart-header">
+								<div>
+									<h3 class="chart-title">Phân bố theo danh mục</h3>
+									<p class="chart-subtitle">Số lượng sản phẩm trong mỗi danh mục</p>
+								</div>
+							</div>
+							<div class="chart-wrapper">
+								<canvas id="categoryChart"></canvas>
+							</div>
+						</div>
+
+						<div class="chart-container">
+							<div class="chart-header">
+								<div>
+									<h3 class="chart-title">Sản phẩm bán chạy</h3>
+									<p class="chart-subtitle">Top 5 sản phẩm có đơn hàng nhiều nhất</p>
+								</div>
+							</div>
+							<div id="topProductsList" class="top-products-list">
+								<div class="chart-loading">
+									<div class="loading-spinner"></div>
+									Đang tải...
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="charts-grid">
+						<div class="chart-container">
+							<div class="chart-header">
+								<div>
+									<h3 class="chart-title">Thêm sản phẩm theo tháng</h3>
+									<p class="chart-subtitle">12 tháng gần nhất</p>
+								</div>
+							</div>
+							<div class="chart-wrapper">
+								<canvas id="monthlyChart"></canvas>
+							</div>
+						</div>
+
+						<div class="chart-container">
+							<div class="chart-header">
+								<div>
+									<h3 class="chart-title">Phân bố đánh giá</h3>
+									<p class="chart-subtitle">Chất lượng sản phẩm theo rating</p>
+								</div>
+							</div>
+							<div id="ratingDistribution">
+								<div class="chart-loading">
+									<div class="loading-spinner"></div>
+									Đang tải...
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Existing search and filter cards -->
 				<div class="card christmas-card mb-3">
 					<div class="card-body">
 						<div class="row">
@@ -195,5 +267,6 @@
 @endsection
 
 @section('body-script')
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 	<script src="{{ asset('js/admin/products/index.js') }}"></script>
 @endsection

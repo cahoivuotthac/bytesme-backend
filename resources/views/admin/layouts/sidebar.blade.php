@@ -14,7 +14,7 @@
 		</li>
 		<li class="nav-item pt-3">
 			<a class="nav-link d-block" href="{{ route('admin.dashboard.showDashboardPage') }}">
-				<div class="fw-bold pt-1" style="font-size: 1.2rem; color: white;">🍰 Bytesme</div>
+				<div class="fw-bold pt-1" style="font-size: 1.2rem; color: black;">🍰&ensp;&ensp;&ensp;Bytesme</div>
 				<div class="small fw-light pt-1" style="color: rgba(255,255,255,0.8);">Admin Panel</div>
 			</a>
 		</li>
@@ -32,28 +32,29 @@
 			<a class="nav-link" href="{{ route('admin.orders.showOrdersPage') }}">
 				<i class="menu-icon mdi mdi-cart"></i>
 				<span class="menu-title">Đơn hàng</span>
-				<div class="menu-sub-title">Quản lý đơn hàng</div>
+				<!-- &ensp;&ensp;&ensp; -->
+				<div class="menu-sub-title ms-3">Quản lý đơn hàng</div>
 			</a>
 		</li>
 		<li class="nav-item">
 			<a class="nav-link" href="{{ route('admin.products.index') }}">
 				<i class="menu-icon mdi mdi-cupcake"></i>
 				<span class="menu-title">Sản phẩm</span>
-				<div class="menu-sub-title">Bánh & Đồ uống</div>
+				<div class="menu-sub-title ms-3">Bánh & Đồ uống</div>
 			</a>
 		</li>
 		<li class="nav-item">
-			<a class="nav-link" href="/admin/users">
+			<a class="nav-link" href="{{ route('admin.users.index') }}">
 				<i class="menu-icon mdi mdi-account-multiple"></i>
 				<span class="menu-title">Khách hàng</span>
-				<div class="menu-sub-title">Quản lý người dùng</div>
+				<div class="menu-sub-title ms-3">Quản lý người dùng</div>
 			</a>
 		</li>
 		<li class="nav-item">
 			<a class="nav-link" href="{{ route('admin.vouchers.showVouchersPage') }}">
 				<i class="menu-icon mdi mdi-tag-multiple"></i>
 				<span class="menu-title">Khuyến mãi</span>
-				<div class="menu-sub-title">Mã giảm giá</div>
+				<div class="menu-sub-title ms-3">Mã giảm giá</div>
 			</a>
 		</li>
 		<li class="pt-2 pb-1">

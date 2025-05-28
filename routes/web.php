@@ -13,6 +13,7 @@ use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AdminVoucherController;
 use App\Http\Controllers\AdminNotificationController;
+use App\Http\Controllers\AdminUserController;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -347,6 +348,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 			Route::post('/{product_id}/update-field', [AdminProductController::class, 'updateField'])->name('updateField');
 			Route::put('/{product_id}/update', [AdminProductController::class, 'update'])->name('update');
 			Route::put('/', [AdminProductController::class, 'createProduct'])->name('createProduct');
+			Route::get('/analytics/data', [AdminProductController::class, 'getProductAnalytics'])->name('analytics');
 		});
 
 		// Admin vouchers routes
@@ -364,6 +366,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
 				->name('getNotifications');
 			Route::post('/{notification_id}/mark-as-read', [AdminNotificationController::class, 'markNotifcationAsRead'])
 				->name('markAsRead');
+		});
+
+		// Admin users management routes
+		Route::prefix('users')->name('users.')->group(function () {
+			Route::get('/', [AdminUserController::class, 'showUsersPage'])->name('index');
+			Route::get('/analytics/data', [AdminUserController::class, 'getUserAnalytics'])->name('analytics');
+			Route::get('/{user_id}/details', [AdminUserController::class, 'getUserDetails'])->name('details');
+			Route::post('/{user_id}/update-status', [AdminUserController::class, 'updateUserStatus'])->name('updateStatus');
 		});
 	});
 });

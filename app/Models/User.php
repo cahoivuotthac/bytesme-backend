@@ -95,7 +95,6 @@ class User extends Authenticatable
 		return $this->hasMany(OrderFeedback::class, 'user_id', 'user_id');
 	}
 
-
 	// public function return_refund_items()
 	// {
 	// 	return $this->hasMany(ReturnRefundItem::class);

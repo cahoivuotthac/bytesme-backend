@@ -213,6 +213,9 @@ $(document).ready(function () {
             $("#searchType").val(searchType);
         }
     })();
+
+    // Initialize analytics dashboard
+    loadProductAnalytics();
 });
 
 function updateProductField(productId, field, value) {
@@ -484,3 +487,186 @@ $(document).on("click", ".remove-size-price", function () {
         addSizePriceRow();
     }
 });
+
+function loadProductAnalytics() {
+    $.ajax({
+        url: '/admin/products/analytics/data',
+        method: 'GET',
+        success: function(response) {
+            if (response.success) {
+                renderMetricsCards(response.data.inventory);
+                renderCategoryChart(response.data.category_distribution);
+                renderTopProductsList(response.data.top_selling);
+                renderMonthlyChart(response.data.monthly_additions);
+                renderRatingDistribution(response.data.rating_stats);
+            } else {
+                showAlert('error', 'Không thể tải dữ liệu phân tích');
+            }
+        },
+        error: function() {
+            showAlert('error', 'Có lỗi khi tải dữ liệu phân tích');
+        }
+    });
+}
+
+function renderMetricsCards(inventory) {
+    const metricsHtml = `
+        <div class="metric-card">
+            <div class="metric-icon total">
+                <i class="mdi mdi-package-variant"></i>
+            </div>
+            <div class="metric-value">${inventory.total}</div>
+            <div class="metric-label">Tổng sản phẩm</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon in-stock">
+                <i class="mdi mdi-check-circle"></i>
+            </div>
+            <div class="metric-value">${inventory.in_stock}</div>
+            <div class="metric-label">Còn hàng</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon low-stock">
+                <i class="mdi mdi-alert-circle"></i>
+            </div>
+            <div class="metric-value">${inventory.low_stock}</div>
+            <div class="metric-label">Sắp hết hàng</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon out-stock">
+                <i class="mdi mdi-close-circle"></i>
+            </div>
+            <div class="metric-value">${inventory.out_of_stock}</div>
+            <div class="metric-label">Hết hàng</div>
+        </div>
+    `;
+    $('#metricsGrid').html(metricsHtml);
+}
+
+function renderCategoryChart(categoryData) {
+    const ctx = document.getElementById('categoryChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: categoryData.map(item => item.category_name),
+            datasets: [{
+                data: categoryData.map(item => item.count),
+                backgroundColor: [
+                    '#435E53', '#6c94a3', '#28a745', '#ffc107', 
+                    '#dc3545', '#6f42c1', '#fd7e14', '#20c997'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderTopProductsList(topProducts) {
+    const productsHtml = topProducts.map(product => `
+        <div class="top-product-item">
+            <img src="${product.image || '/images/placeholder.jpg'}" alt="${product.name}" class="top-product-image">
+            <div class="top-product-info">
+                <div class="top-product-name">${product.name}</div>
+                <div class="top-product-category">${product.category}</div>
+            </div>
+            <div class="top-product-stats">
+                <div class="top-product-orders">${product.total_orders}</div>
+                <div class="top-product-stock">Tồn: ${product.stock}</div>
+            </div>
+        </div>
+    `).join('');
+    
+    $('#topProductsList').html(productsHtml);
+}
+
+function renderMonthlyChart(monthlyData) {
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: monthlyData.map(item => {
+                const date = new Date(item.month + '-01');
+                return date.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' });
+            }),
+            datasets: [{
+                label: 'Sản phẩm mới',
+                data: monthlyData.map(item => item.count),
+                borderColor: '#435E53',
+                backgroundColor: 'rgba(67, 94, 83, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderRatingDistribution(ratingStats) {
+    const ratings = [
+        { label: 'Xuất sắc (4.5-5★)', count: ratingStats.excellent, stars: '★★★★★' },
+        { label: 'Tốt (3.5-4.5★)', count: ratingStats.good, stars: '★★★★☆' },
+        { label: 'Trung bình (2.5-3.5★)', count: ratingStats.average, stars: '★★★☆☆' },
+        { label: 'Kém (1-2.5★)', count: ratingStats.poor, stars: '★★☆☆☆' },
+        { label: 'Chưa có đánh giá', count: ratingStats.no_rating, stars: '☆☆☆☆☆' }
+    ];
+
+    const total = ratingStats.total_products;
+    const ratingHtml = ratings.map(rating => `
+        <div class="rating-indicator">
+            <div class="rating-label">
+                <span class="rating-stars">${rating.stars}</span>
+                ${rating.label}
+            </div>
+            <div class="rating-bar">
+                <div class="rating-fill" style="width: ${total > 0 ? (rating.count / total) * 100 : 0}%"></div>
+            </div>
+            <div class="rating-count">${rating.count}</div>
+        </div>
+    `).join('');
+
+    $('#ratingDistribution').html(`
+        <div style="text-align: center; margin-bottom: 1rem;">
+            <div style="font-size: 2rem; font-weight: bold; color: #435E53;">
+                ${ratingStats.avg_rating ? parseFloat(ratingStats.avg_rating).toFixed(1) : 'N/A'}
+            </div>
+            <div style="color: #6c757d;">Điểm trung bình</div>
+        </div>
+        ${ratingHtml}
+    `);
+}

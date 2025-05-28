@@ -133,6 +133,15 @@ class MomoPaymentController extends Controller
 				Constants::PAYMENT_METHOD_MOMO
 			));
 
+			// Send noti to admin
+			User::where('role_type', 1)
+				->first()
+				->notify(new OnlinePaymentNotification(
+					$order->order_id,
+					"failed", // payment stauts
+					Constants::PAYMENT_METHOD_MOMO
+				));
+
 			return response()->json(['message' => 'Acknowledge payment unsuccessful'], 200);
 		}
 
@@ -165,6 +174,14 @@ class MomoPaymentController extends Controller
 				"success", // payment stauts
 				Constants::PAYMENT_METHOD_MOMO
 			));
+			// Send noti to admin
+			User::where('role_type', 1)
+				->first()
+				->notify(new OnlinePaymentNotification(
+					$order->order_id,
+					"success", // payment stauts
+					Constants::PAYMENT_METHOD_MOMO
+				));
 		} else if ((int) $receivedData['resultCode'] === 1005) {
 			Log::debug('Payment timed out: ' . json_encode($receivedData));
 			$order->order_is_paid = false;

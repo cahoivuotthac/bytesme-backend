@@ -1,0 +1,224 @@
+/* Inherit base styles from products */
+@import url('../products/index.css');
+
+/* User-specific styles */
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.user-avatar:hover {
+    transform: scale(1.1);
+    border-color: #3498db;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+}
+
+.user-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.user-username {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Role badges */
+.badge-role-0 {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-role-1 {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-role-2 {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* User metrics cards - specific icons and colors */
+.metric-icon.users { background: linear-gradient(135deg, #3498db, #2980b9); }
+.metric-icon.new-users { background: linear-gradient(135deg, #27ae60, #229954); }
+.metric-icon.active-users { background: linear-gradient(135deg, #f39c12, #e67e22); }
+.metric-icon.inactive-users { background: linear-gradient(135deg, #95a5a6, #7f8c8d); }
+
+/* Top spenders list */
+.top-spenders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.top-spender-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.top-spender-item:hover {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+    transform: translateX(4px);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+}
+
+.top-spender-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 1rem;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.top-spender-info {
+    flex: 1;
+}
+
+.top-spender-name {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+}
+
+.top-spender-email {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.top-spender-stats {
+    text-align: right;
+}
+
+.top-spender-amount {
+    font-weight: 700;
+    color: #27ae60;
+    font-size: 1.1rem;
+}
+
+.top-spender-orders {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.top-spender-item:hover .top-spender-name,
+.top-spender-item:hover .top-spender-email,
+.top-spender-item:hover .top-spender-amount,
+.top-spender-item:hover .top-spender-orders {
+    color: white;
+}
+
+/* Geographic list */
+.geographic-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.geographic-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.geographic-item:hover {
+    background: #e9ecef;
+    transform: translateX(2px);
+}
+
+.geographic-city {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.geographic-count {
+    font-weight: 700;
+    color: #3498db;
+    padding: 0.25rem 0.5rem;
+    background: rgba(52, 152, 219, 0.1);
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
+
+/* Christmas theme for user management */
+.christmas-icon {
+    color: #C41E3A;
+    margin: 0 10px;
+    animation: twinkle 2s infinite ease-in-out;
+}
+
+/* Special VIP user highlighting */
+.user-vip {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #2c3e50;
+    border-radius: 4px;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* User table row hover effects */
+.table tbody tr:hover .user-avatar {
+    transform: scale(1.1);
+    border-color: #3498db;
+}
+
+.table tbody tr:hover .user-name {
+    color: #3498db;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .top-spender-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .top-spender-avatar {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+    }
+    
+    .top-spender-stats {
+        text-align: center;
+        margin-top: 0.5rem;
+    }
+}

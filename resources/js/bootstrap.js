@@ -4,10 +4,10 @@
  * CSRF token as a header based on the value of the "XSRF" token cookie.
  */
 
-import axios from 'axios';
+import axios from "axios";
 window.axios = axios;
 
-window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+window.axios.defaults.headers.common["X-Requested-With"] = "XMLHttpRequest";
 
 /**
  * Echo exposes an expressive API for subscribing to channels and listening
@@ -15,10 +15,9 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
  * allows your team to easily build robust real-time web applications.
  */
 
-// import Echo from 'laravel-echo';
-
-// import Pusher from 'pusher-js';
-// window.Pusher = Pusher;
+import Echo from "laravel-echo";
+import Pusher from "pusher-js";
+window.Pusher = Pusher;
 
 // window.Echo = new Echo({
 //     broadcaster: 'pusher',
@@ -30,3 +29,16 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 //     forceTLS: (import.meta.env.VITE_PUSHER_SCHEME ?? 'https') === 'https',
 //     enabledTransports: ['ws', 'wss'],
 // });
+
+document.echo = new Echo({
+    broadcaster: "reverb",
+    key: "local", //
+    wsHost: window.location.hostname, // Replace with your Pusher or local server host
+    wsPort: 8080, // Port for the WebSocket connection
+    forceTLS: false, // Use true if using HTTPS, false for HTTP
+    // wssPort: 443, // Port for the Secure WebSocket connection
+    disableStats: true, // Disable sending connection stats to Pusher
+    enabledTransports: ["ws"], // Enable WebSocket transport
+});
+
+console.log("Echo initialized with Reverb");

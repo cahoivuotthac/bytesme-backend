@@ -254,8 +254,12 @@
                                                 </div>
                                             @endforeach
                                         </div>
-                                        <button class="btn btn-primary mt-2 mb-3 change-status-btn rounded" style="font-size: 0.9rem;" data-order-id="{{ $order->order_id }}">
-                                            <p class="d-flex align-items-center">Cập trạng thái thành đang giao hàng <span class="mdi mdi-truck-delivery ms-2" style="font-size: 1.2rem;"></span></p>
+                                        <button class="btn btn-primary mt-2 mb-3 change-status-btn rounded" style="font-size: 0.9rem;" data-order-id="{{ $order->order_id }}" data-order-status="{{ $order->order_status }}">
+											@if($order->order_status == 'pending')
+												<p class="d-flex align-items-center">Cập trạng thái thành đang giao hàng <span class="mdi mdi-truck-delivery ms-2" style="font-size: 1.2rem;"></span></p>
+											@elseif($order->order_status == 'delivering')
+												<p class="d-flex align-items-center">Xác nhận đã giao hàng <span class="mdi mdi-check-circle ms-2" style="font-size: 1.2rem;"></span></p>
+											@endif
                                         </button>
                                     </div>
                                 </div>

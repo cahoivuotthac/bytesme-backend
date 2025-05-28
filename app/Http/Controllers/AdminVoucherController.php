@@ -19,7 +19,7 @@ class AdminVoucherController extends Controller
 		if ($request->has('search') && $request->has('type')) {
 			$searchTerm = $request->search;
 			$searchType = $request->type;
-			
+
 			$query->where($searchType, 'LIKE', "%{$searchTerm}%");
 		}
 
@@ -32,7 +32,7 @@ class AdminVoucherController extends Controller
 					break;
 				case 'active':
 					$query->where('voucher_start_date', '<=', $now)
-						  ->where('voucher_end_date', '>=', $now);
+						->where('voucher_end_date', '>=', $now);
 					break;
 				case 'expired':
 					$query->where('voucher_end_date', '<', $now);
@@ -64,10 +64,10 @@ class AdminVoucherController extends Controller
 			$voucher = Voucher::create([
 				'voucher_name' => $request->voucher_name,
 				'voucher_type' => $request->voucher_type,
-				'description' => $request->description,
+				'voucher_description' => $request->description,
 				'voucher_start_date' => $startDate,
 				'voucher_end_date' => $endDate,
-				'value' => $request->value ?? 0,
+				'voucher_value' => $request->value ?? 0,
 			]);
 
 			// Handle voucher rules
