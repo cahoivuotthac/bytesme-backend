@@ -20,37 +20,46 @@ class AdminUserController extends Controller
 		$sort = $request->input('sort', 'created_at');
 		$direction = $request->input('direction', 'desc');
 
-		// Base query with relationships - properly calculate total_spent
-		$query = User::withCount(['orders'])
-			->withSum('orders as total_spent', 'order_total_price');
+		// Base query with proper joins to calculate totals
+		$query = User::leftJoin('orders', 'users.user_id', '=', 'orders.user_id')
+			->select([
+				'users.*',
+				DB::raw('COUNT(DISTINCT orders.order_id) as orders_count'),
+				DB::raw('COALESCE(SUM(orders.order_total_price), 0) as total_spent')
+			])
+			->groupBy([
+				'users.user_id',
+				'users.name',
+				'users.email',
+				'users.phone_number',
+				'users.avatar',
+				'users.role_type',
+				'users.created_at',
+				'users.updated_at',
+			]);
 
 		// Apply status filter
 		if ($status) {
 			switch ($status) {
 				case 'active':
-					// Users with orders in the last 30 days
 					$query->whereHas('orders', function ($q) {
 						$q->where('created_at', '>=', now()->subDays(30));
 					});
 					break;
 				case 'inactive':
-					// Users with no orders in the last 30 days or no orders at all
-					$query->where(function ($q) {
-						$q->whereDoesntHave('orders')
-							->orWhereDoesntHave('orders', function ($subQ) {
-								$subQ->where('created_at', '>=', now()->subDays(30));
-							});
+					$query->whereDoesntHave('orders', function ($q) {
+						$q->where('created_at', '>=', now()->subDays(90));
 					});
 					break;
 				case 'new':
-					$query->where('created_at', '>=', now()->subDays(7));
+					$query->where('users.created_at', '>=', now()->subDays(7));
 					break;
 			}
 		}
 
 		// Apply role filter
-		if ($role && $role !== 'all') {
-			$query->where('role_type', $role);
+		if ($role !== null && $role !== '') {
+			$query->where('users.role_type', $role);
 		}
 
 		// Apply search if provided
@@ -59,8 +68,17 @@ class AdminUserController extends Controller
 			$searchType = $request->input('type', 'name');
 
 			$query->where(function ($q) use ($searchTerm, $searchType) {
-				if (in_array($searchType, ['name', 'email', 'phone_number'])) {
-					$q->where($searchType, 'LIKE', "%{$searchTerm}%");
+				switch ($searchType) {
+					case 'full_name':
+					case 'name':
+						$q->where('users.name', 'LIKE', "%{$searchTerm}%");
+						break;
+					case 'email':
+						$q->where('users.email', 'LIKE', "%{$searchTerm}%");
+						break;
+					case 'phone_number':
+						$q->where('users.phone_number', 'LIKE', "%{$searchTerm}%");
+						break;
 				}
 			});
 		}
@@ -68,10 +86,10 @@ class AdminUserController extends Controller
 		// Apply sorting
 		switch ($sort) {
 			case 'name':
-				$query->orderBy('name', $direction);
+				$query->orderBy('users.name', $direction);
 				break;
 			case 'email':
-				$query->orderBy('email', $direction);
+				$query->orderBy('users.email', $direction);
 				break;
 			case 'orders':
 				$query->orderBy('orders_count', $direction);
@@ -80,11 +98,11 @@ class AdminUserController extends Controller
 				$query->orderBy('total_spent', $direction);
 				break;
 			default:
-				$query->orderBy('created_at', $direction);
+				$query->orderBy('users.created_at', $direction);
 		}
 
 		// Get paginated results
-		$users = $query->paginate(15)->withQueryString();
+		$users = $query->paginate(10)->withQueryString();
 
 		return view('admin.users.index', compact('users'));
 	}
@@ -95,7 +113,7 @@ class AdminUserController extends Controller
 			// Basic user statistics
 			$totalUsers = User::count();
 			$newUsersThisMonth = User::where('created_at', '>=', now()->startOfMonth())->count();
-			
+
 			// Active users based on recent order activity
 			$activeUsers = User::whereHas('orders', function ($q) {
 				$q->where('created_at', '>=', now()->subDays(30));
@@ -287,28 +305,45 @@ class AdminUserController extends Controller
 	public function getUserDetails($user_id)
 	{
 		try {
-			$user = User::with(['orders.order_items.product', 'addresses'])
+			$user = User::with([
+				'orders' => function ($query) {
+					$query->orderBy('created_at', 'desc');
+				}
+			])
 				->withCount('orders')
-				->withSum('orders as total_spent', 'order_total_price')
+				->withSum('orders', 'order_total_price')
 				->findOrFail($user_id);
 
-			// Get recent orders
-			$recentOrders = $user->orders()
-				->with('order_items.product')
-				->orderBy('created_at', 'desc')
-				->limit(5)
+			// Get user addresses
+			$addresses = DB::table('user_addresses')
+				->where('user_id', $user_id)
 				->get();
+
+			// Get recent activity
+			$recentOrders = $user->orders()->take(5)->get();
 
 			return response()->json([
 				'success' => true,
-				'user' => $user,
-				'recent_orders' => $recentOrders
+				'user' => [
+					'user_id' => $user->user_id,
+					'name' => $user->name,
+					'email' => $user->email,
+					'phone_number' => $user->phone_number,
+					'avatar' => $user->avatar,
+					'role_type' => $user->role_type,
+					'created_at' => $user->created_at,
+					'updated_at' => $user->updated_at,
+					'orders_count' => $user->orders_count,
+					'total_spent' => $user->orders_sum_order_total_price ?? 0,
+					'addresses' => $addresses,
+					'recent_orders' => $recentOrders
+				]
 			]);
 		} catch (\Exception $e) {
 			Log::error('AdminUserController@getUserDetails: ' . $e->getMessage());
 			return response()->json([
 				'success' => false,
-				'message' => 'Failed to fetch user details'
+				'message' => 'Không thể tải thông tin người dùng'
 			], 500);
 		}
 	}
