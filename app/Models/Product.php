@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Log;
  * @property string|null $detailed_description
  * @property array|null $product_sizes_prices
  * @property int|null $price
- * @property int|null $total_orders
+ * @property int|null $total_orders // This is the total number of sold quantity of this product (not the number of orders)
  * @property int|null $total_ratings
  * @property float|null $overall_stars
  * @property string $product_unit_price

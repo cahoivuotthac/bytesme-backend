@@ -1,5 +1,5 @@
 @extends("admin.layouts.layout")
-@section("title", "Bytesme Admin Dashboard")
+@section("title", "Bảng điều khiển Admin Bytesme")
 
 @section('style')
 	<style>
@@ -118,7 +118,7 @@
 				data: {
 					labels: revenueData.map(item => new Date(item.date).toLocaleDateString()),
 					datasets: [{
-						label: 'Daily Revenue (VND)',
+						label: 'Doanh thu hàng ngày (VND)',
 						data: revenueData.map(item => item.total),
 						borderColor: '#11998e',
 						backgroundColor: 'rgba(17, 153, 142, 0.1)',
@@ -153,7 +153,15 @@
 			new Chart(statusCtx, {
 				type: 'doughnut',
 				data: {
-					labels: statusData.map(item => item.order_status),
+					labels: statusData.map(item => {
+						switch(item.order_status) {
+							case 'pending': return 'Chờ xử lý';
+							case 'delivering': return 'Đang giao';
+							case 'delivered': return 'Đã giao';
+							case 'cancelled': return 'Đã hủy';
+							default: return item.order_status;
+						}
+					}),
 					datasets: [{
 						data: statusData.map(item => item.count),
 						backgroundColor: ['#ffc107', '#007bff', '#28a745', '#dc3545', '#6c757d'],
@@ -178,7 +186,7 @@
 				data: {
 					labels: productsData.map(item => item.product_name),
 					datasets: [{
-						label: 'Units Sold',
+						label: 'Số lượng đã bán',
 						data: productsData.map(item => item.total_sold),
 						backgroundColor: '#4facfe',
 						borderRadius: 6
@@ -206,7 +214,7 @@
 					labels: categoryData.map(item => item.category_name),
 					datasets: [
 						{
-							label: 'Total Quantity Sold',
+							label: 'Tổng số lượng đã bán',
 							data: categoryData.map(item => item.total_quantity),
 							borderColor: '#ff6b6b',
 							backgroundColor: 'rgba(255, 107, 107, 0.2)',
@@ -214,7 +222,7 @@
 							pointBackgroundColor: '#ff6b6b'
 						},
 						{
-							label: 'Number of Orders',
+							label: 'Số đơn hàng',
 							data: categoryData.map(item => item.order_count),
 							borderColor: '#4ecdc4',
 							backgroundColor: 'rgba(78, 205, 196, 0.2)',
@@ -255,14 +263,14 @@
 					labels: hourlyData.map(item => item.hour + ':00'),
 					datasets: [
 						{
-							label: 'Number of Orders',
+							label: 'Số đơn hàng',
 							data: hourlyData.map(item => item.order_count),
 							backgroundColor: '#667eea',
 							borderRadius: 4,
 							yAxisID: 'y'
 						},
 						{
-							label: 'Avg Order Value (VND)',
+							label: 'Giá trị đơn hàng TB (VND)',
 							data: hourlyData.map(item => item.avg_order_value),
 							type: 'line',
 							borderColor: '#f093fb',
@@ -283,14 +291,14 @@
 						},
 						title: {
 							display: true,
-							text: 'Peak Hours Analysis (Last 30 Days)'
+							text: 'Phân tích giờ cao điểm (30 ngày qua)'
 						}
 					},
 					scales: {
 						x: {
 							title: {
 								display: true,
-								text: 'Hour of Day'
+								text: 'Giờ trong ngày'
 							}
 						},
 						y: {
@@ -299,7 +307,7 @@
 							position: 'left',
 							title: {
 								display: true,
-								text: 'Number of Orders'
+								text: 'Số đơn hàng'
 							},
 							beginAtZero: true
 						},
@@ -309,7 +317,7 @@
 							position: 'right',
 							title: {
 								display: true,
-								text: 'Average Order Value (VND)'
+								text: 'Giá trị đơn hàng TB (VND)'
 							},
 							beginAtZero: true,
 							grid: { drawOnChartArea: false },
@@ -331,8 +339,8 @@
 		<!-- Header -->
 		<div class="row mb-4">
 			<div class="col-12">
-				<h1 class="h3 mb-0 text-gray-800">Bytesme Dashboard</h1>
-				<p class="text-muted">Welcome back! Here's what's going on with Bytesme today.</p>
+				<h1 class="h3 mb-0 text-gray-800">Bảng điều khiển Bytesme</h1>
+				<p class="text-muted">Chào mừng trở lại! Đây là tình hình kinh doanh của Bytesme hôm nay.</p>
 			</div>
 		</div>
 
@@ -341,36 +349,36 @@
 			<div class="col-xl-3 col-md-6">
 				<div class="metric-card revenue">
 					<div class="metric-value">{{ number_format($totalRevenue) }} VND</div>
-					<div class="metric-label">Total Revenue</div>
+					<div class="metric-label">Tổng doanh thu</div>
 					<div class="metric-change">
-						Today: {{ number_format($todayRevenue) }} VND
+						Hôm nay: {{ number_format($todayRevenue) }} VND
 					</div>
 				</div>
 			</div>
 			<div class="col-xl-3 col-md-6">
 				<div class="metric-card orders">
 					<div class="metric-value">{{ number_format($totalOrders) }}</div>
-					<div class="metric-label">Total Orders</div>
+					<div class="metric-label">Tổng đơn hàng</div>
 					<div class="metric-change">
-						Today: {{ $todayOrders }} orders
+						Hôm nay: {{ $todayOrders }} đơn hàng
 					</div>
 				</div>
 			</div>
 			<div class="col-xl-3 col-md-6">
 				<div class="metric-card customers">
 					<div class="metric-value">{{ number_format($totalCustomers) }}</div>
-					<div class="metric-label">Total Customers</div>
+					<div class="metric-label">Tổng khách hàng</div>
 					<div class="metric-change">
-						New today: {{ $newCustomersToday }}
+						Mới hôm nay: {{ $newCustomersToday }}
 					</div>
 				</div>
 			</div>
 			<div class="col-xl-3 col-md-6">
 				<div class="metric-card products">
 					<div class="metric-value">{{ number_format($totalProducts) }}</div>
-					<div class="metric-label">Total Products</div>
+					<div class="metric-label">Tổng sản phẩm</div>
 					<div class="metric-change">
-						Avg Rating: {{ number_format($averageRating, 1) }}/5
+						Đánh giá TB: {{ number_format($averageRating, 1) }}/5
 					</div>
 				</div>
 			</div>
@@ -381,8 +389,8 @@
 			<div class="row mb-4">
 				<div class="col-12">
 					<div class="alert alert-{{ $revenueGrowth > 0 ? 'success' : 'warning' }} alert-dismissible fade show">
-						<strong>Monthly Revenue {{ $revenueGrowth > 0 ? 'Growth' : 'Decline' }}:</strong>
-						{{ $revenueGrowth > 0 ? '+' : '' }}{{ number_format($revenueGrowth, 1) }}% compared to last month
+						<strong>{{ $revenueGrowth > 0 ? 'Tăng trưởng' : 'Giảm' }} doanh thu tháng:</strong>
+						{{ $revenueGrowth > 0 ? '+' : '' }}{{ number_format($revenueGrowth, 1) }}% so với tháng trước
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 					</div>
 				</div>
@@ -394,7 +402,7 @@
 			<!-- Revenue Trend Chart -->
 			<div class="col-xl-8 col-lg-7">
 				<div class="dashboard-card p-4">
-					<h5 class="card-title mb-3">Revenue Trend (Last 30 Days)</h5>
+					<h5 class="card-title mb-3">Xu hướng doanh thu (30 ngày qua)</h5>
 					<div class="chart-container">
 						<canvas id="revenueChart"></canvas>
 					</div>
@@ -404,7 +412,7 @@
 			<!-- Order Status Distribution -->
 			<div class="col-xl-4 col-lg-5">
 				<div class="dashboard-card p-4">
-					<h5 class="card-title mb-3">Order Status Distribution</h5>
+					<h5 class="card-title mb-3">Phân bố trạng thái đơn hàng</h5>
 					<div class="chart-container">
 						<canvas id="statusChart"></canvas>
 					</div>
@@ -417,7 +425,7 @@
 			<!-- Top Products -->
 			<div class="col-xl-6">
 				<div class="dashboard-card p-4">
-					<h5 class="card-title mb-3">Top Selling Products</h5>
+					<h5 class="card-title mb-3">Sản phẩm bán chạy nhất</h5>
 					<div class="chart-container">
 						<canvas id="productsChart"></canvas>
 					</div>
@@ -427,30 +435,36 @@
 			<!-- Recent Orders -->
 			<div class="col-xl-6">
 				<div class="dashboard-card p-4">
-					<h5 class="card-title mb-3">Recent Orders</h5>
+					<h5 class="card-title mb-3">Đơn hàng gần đây</h5>
 					<div class="table-responsive">
 						<table class="table table-hover mb-0">
 							<thead class="table-light">
 								<tr>
-									<th>Order ID</th>
-									<th>Customer</th>
-									<th>Total</th>
-									<th>Status</th>
-									<th>Date</th>
+									<th>Mã đơn hàng</th>
+									<th>Khách hàng</th>
+									<th>Tổng tiền</th>
+									<th>Trạng thái</th>
+									<th>Ngày</th>
 								</tr>
 							</thead>
 							<tbody>
 								@foreach($recentOrders as $order)
 									<tr>
 										<td><strong>#{{ $order->order_id }}</strong></td>
-										<td>{{ $order->user->user_name ?? 'Guest' }}</td>
+										<td>{{ $order->user->user_name ?? 'Khách vãng lai' }}</td>
 										<td>{{ number_format($order->order_total_price) }} VND</td>
 										<td>
 											<span class="status-badge status-{{ $order->order_status }}">
-												{{ ucfirst($order->order_status) }}
+												@switch($order->order_status)
+													@case('pending') Chờ xử lý @break
+													@case('delivering') Đang giao @break
+													@case('delivered') Đã giao @break
+													@case('cancelled') Đã hủy @break
+													@default {{ ucfirst($order->order_status) }}
+												@endswitch
 											</span>
 										</td>
-										<td>{{ $order->created_at->format('M d, H:i') }}</td>
+										<td>{{ $order->created_at->format('d/m H:i') }}</td>
 									</tr>
 								@endforeach
 							</tbody>
@@ -465,8 +479,8 @@
 			<!-- Category Distribution Spider Chart -->
 			<div class="col-xl-6">
 				<div class="dashboard-card p-4">
-					<h5 class="card-title mb-3">Product Category Performance</h5>
-					<p class="text-muted small mb-3">Distribution of orders and quantities by product category</p>
+					<h5 class="card-title mb-3">Hiệu suất theo danh mục sản phẩm</h5>
+					<p class="text-muted small mb-3">Phân bố đơn hàng và số lượng theo danh mục sản phẩm</p>
 					<div class="chart-container-small">
 						<canvas id="categoryChart"></canvas>
 					</div>
@@ -476,8 +490,8 @@
 			<!-- Peak Hours Analysis -->
 			<div class="col-xl-6">
 				<div class="dashboard-card p-4">
-					<h5 class="card-title mb-3">Peak Hours Analysis</h5>
-					<p class="text-muted small mb-3">Identify busy hours and average order values by time</p>
+					<h5 class="card-title mb-3">Phân tích giờ cao điểm</h5>
+					<p class="text-muted small mb-3">Xác định các khung giờ bận rộn và giá trị đơn hàng trung bình</p>
 					<div class="chart-container-small">
 						<canvas id="hourlyChart"></canvas>
 					</div>
@@ -489,23 +503,23 @@
 		<div class="row">
 			<div class="col-12">
 				<div class="dashboard-card p-4">
-					<h5 class="card-title mb-3">Monthly Summary</h5>
+					<h5 class="card-title mb-3">Tổng kết tháng</h5>
 					<div class="row">
 						<div class="col-md-3 text-center">
 							<h4 class="text-primary">{{ number_format($monthlyRevenue) }} VND</h4>
-							<p class="text-muted mb-0">This Month Revenue</p>
+							<p class="text-muted mb-0">Doanh thu tháng này</p>
 						</div>
 						<div class="col-md-3 text-center">
 							<h4 class="text-info">{{ $monthlyOrders }}</h4>
-							<p class="text-muted mb-0">This Month Orders</p>
+							<p class="text-muted mb-0">Đơn hàng tháng này</p>
 						</div>
 						<div class="col-md-3 text-center">
 							<h4 class="text-success">{{ number_format($monthlyRevenue / max($monthlyOrders, 1)) }} VND</h4>
-							<p class="text-muted mb-0">Average Order Value</p>
+							<p class="text-muted mb-0">Giá trị đơn hàng TB</p>
 						</div>
 						<div class="col-md-3 text-center">
 							<h4 class="text-warning">{{ number_format($averageRating, 1) }}/5</h4>
-							<p class="text-muted mb-0">Customer Satisfaction</p>
+							<p class="text-muted mb-0">Hài lòng khách hàng</p>
 						</div>
 					</div>
 				</div>

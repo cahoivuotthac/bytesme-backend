@@ -11,7 +11,6 @@ use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminProductController;
-// use App\Http\Controllers\AdminClaimsController;
 use App\Http\Controllers\AdminVoucherController;
 use App\Http\Controllers\AdminNotificationController;
 
@@ -339,14 +338,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
 			Route::get('/metrics', [AdminOrderController::class, 'getDashboardMetrics'])->name('metrics');
 			Route::get('/top-products', [AdminOrderController::class, 'getTopProducts'])->name('topProducts');
 		});
-
-		// Admin claims routes
-		// Route::prefix('claims')->name('claims.')->group(function () {
-		// 	Route::get('/', [AdminClaimsController::class, 'showClaimsPage'])->name('index');
-		// 	Route::get('/{requestId}/details', [AdminClaimsController::class, 'showDetails'])->name('details');
-		// 	Route::post('/update-status', [AdminClaimsController::class, 'updateStatus'])->name('updateStatus');
-		// 	Route::get('/statistics', [AdminClaimsController::class, 'getStatistics'])->name('statistics');
-		// });
 
 		// Admin products management routes
 		Route::prefix('products')->name('products.')->group(function () {
