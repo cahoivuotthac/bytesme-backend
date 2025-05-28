@@ -147,8 +147,9 @@ class OrderController extends Controller
 			Log::debug('Voucher is applicable:');
 			// Apply voucher to order
 			$voucher_rules = $voucher->voucherRules()->get();
-			$this->applyVoucher($voucher, $voucher_rules, $order, $orderItems, true);
+			$this->applyVoucher($voucher, $voucher_rules, $order, $orderItems);
 		}
+
 
 		// Decrease product stock quantities and product total orders (total sold)
 		foreach ($cartItems as $item) {
@@ -199,6 +200,8 @@ class OrderController extends Controller
 		}
 
 		Log::debug("Order placed");
+		$order->save();
+		$order->order_items()->saveMany($orderItems);
 		return response()->json($responseData);
 	}
 
