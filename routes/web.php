@@ -1,5 +1,6 @@
 <?php
 
+// Controllers
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\FeedbackController;
@@ -7,6 +8,13 @@ use App\Http\Controllers\MomoPaymentController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminOrderController;
+use App\Http\Controllers\AdminProductController;
+// use App\Http\Controllers\AdminClaimsController;
+use App\Http\Controllers\AdminVoucherController;
+use App\Http\Controllers\AdminNotificationController;
+
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
@@ -99,10 +107,11 @@ Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
 	Route::post('/update-address', [UserController::class, 'updateAddress']);
 
 	Route::prefix('notification')->group(function () {
-		// Route::get('/', [NotificationController::class, 'getNotifications']);
+		Route::get('/', [NotificationController::class, 'getNotifications']);
+		Route::post('/mark-as-read', [NotificationController::class, 'markAsRead']);
+		Route::post('/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
+		Route::post('/delete', [NotificationController::class, 'deleteNotifications']);
 		// Route::get('/{id}', [NotificationController::class, 'getNotificationById']);
-		// Route::post('/mark-as-read', [NotificationController::class, 'markAsRead']);
-		// Route::delete('/', [NotificationController::class, 'deleteNotifications']);
 		Route::post('/add-push-token', [UserController::class, 'addPushToken']);
 	});
 
@@ -118,6 +127,7 @@ Route::prefix('order')->middleware(['auth:sanctum'])->group(function () {
 	Route::post('/cancel', [OrderController::class, 'cancelOrder']);
 	Route::post('/feedback', [FeedbackController::class, 'sendFeedback']);
 	Route::get('/details', [OrderController::class, 'getOrderDetails']);
+	Route::get('/status', [OrderController::class, 'getOrderStatus']);
 	Route::post('/update-status', [OrderController::class, 'updateOrderStatus']);
 
 	// Notification routes
@@ -277,4 +287,90 @@ Route::middleware('auth:sanctum')->post('/test-broadcast-private', function (Req
 		'user_id' => $user->user_id,
 		'channel' => "App.Models.User.{$user->user_id}"
 	]);
+});
+
+// Admin routes
+
+/**
+ * @notice Admin routes
+ */
+Route::prefix('admin')->name('admin.')->group(function () {
+	// Public admin routes
+	Route::get('/', function () {
+		if (!Auth::check()) {
+			return redirect()->route('admin.auth.showLoginForm');
+		}
+		return Auth::user()->role_type === 1
+			? redirect()->route('admin.dashboard.showDashboardPage')
+			: redirect()->back()->with('error', 'Bạn không có quyền truy cập trang này');
+	})->name('index');
+
+	Route::prefix('auth')->name('auth.')->group(function () {
+		Route::get('/login', [AuthController::class, 'showAdminLoginForm'])->name('showLoginForm');
+		Route::post('/login', [AuthController::class, 'handleAdminLogin'])->name('handleLogin');
+	});
+
+	// Admin protected routes
+	Route::middleware(['auth:sanctum'])->group(function () {
+		// Admin orders route
+		// add back admin protection middleware later
+		Route::prefix('orders')->name('orders.')->group(function () {
+			Route::get('/', [AdminOrderController::class, 'showOrdersPage'])->name('showOrdersPage');
+			Route::get('/{order_id}/details', [AdminOrderController::class, 'getOrderDetails'])->name('getOrdersDetails');
+			Route::get('/edit', [AdminOrderController::class, 'edit'])->name('edit');
+			// Route::get('/orders', [AdminController::class, 'index'])->name('.management');
+			Route::post('/update-field', [AdminOrderController::class, 'updateOrderField'])
+				->name('updateField');
+			Route::get('/statistics', [AdminOrderController::class, 'getStatistics'])->name('statistics');
+		});
+
+		// Admin Dashboard route
+		Route::prefix('dashboard')->name('dashboard.')->group(function () {
+			Route::get('/', [AdminDashboardController::class, 'showDashboardPage'])->name('showDashboardPage');
+			Route::get('/sales-data', [AdminDashboardController::class, 'getSalesData'])->name('getSalesData');
+			Route::get('/analyze/{metric}', [AdminDashboardController::class, 'analyzeMetric']);
+			Route::get('/top-selling', [AdminDashboardController::class, 'topSellingProducts'])->name('topSelling');
+
+			// New chart data routes
+			Route::get('/sales-trend', [AdminOrderController::class, 'getSalesTrendData'])->name('salesTrendData');
+			Route::get('/order-status', [AdminOrderController::class, 'getOrderStatusData'])->name('orderStatusData');
+			Route::get('/popular-hours', [AdminOrderController::class, 'getPopularHoursData'])->name('popularHoursData');
+			Route::get('/category-performance', [AdminOrderController::class, 'getCategoryPerformanceData'])->name('categoryPerformanceData');
+			Route::get('/metrics', [AdminOrderController::class, 'getDashboardMetrics'])->name('metrics');
+			Route::get('/top-products', [AdminOrderController::class, 'getTopProducts'])->name('topProducts');
+		});
+
+		// Admin claims routes
+		// Route::prefix('claims')->name('claims.')->group(function () {
+		// 	Route::get('/', [AdminClaimsController::class, 'showClaimsPage'])->name('index');
+		// 	Route::get('/{requestId}/details', [AdminClaimsController::class, 'showDetails'])->name('details');
+		// 	Route::post('/update-status', [AdminClaimsController::class, 'updateStatus'])->name('updateStatus');
+		// 	Route::get('/statistics', [AdminClaimsController::class, 'getStatistics'])->name('statistics');
+		// });
+
+		// Admin products management routes
+		Route::prefix('products')->name('products.')->group(function () {
+			Route::get('/', [AdminProductController::class, 'showProductsPage'])->name('index');
+			Route::get('/{product_id}/details', [AdminProductController::class, 'getDetails'])->name('details');
+			Route::post('/{product_id}/update-field', [AdminProductController::class, 'updateField'])->name('updateField');
+			Route::put('/{product_id}/update', [AdminProductController::class, 'update'])->name('update');
+		});
+
+		// Admin vouchers routes
+		Route::prefix('vouchers')->name('vouchers.')->group(function () {
+			Route::get('/', [AdminVoucherController::class, 'showVouchersPage'])->name('showVouchersPage');
+			Route::post('/store', [AdminVoucherController::class, 'store'])->name('store');
+			Route::get('/{voucher_id}/details', [AdminVoucherController::class, 'getDetails'])->name('details');
+			Route::post('/{voucher_id}/update', [AdminVoucherController::class, 'update'])->name('update');
+			Route::post('/{voucher_id}/delete', [AdminVoucherController::class, 'delete'])->name('delete');
+		});
+
+		// Admin notification routes
+		Route::prefix('notifications')->name('notifications.')->group(function () {
+			Route::get('/', [AdminNotificationController::class, 'getNotifications'])
+				->name('getNotifications');
+			Route::post('/{notification_id}/mark-as-read', [AdminNotificationController::class, 'markNotifcationAsRead'])
+				->name('markAsRead');
+		});
+	});
 });

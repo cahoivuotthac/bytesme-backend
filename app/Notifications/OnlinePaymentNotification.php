@@ -15,15 +15,17 @@ class OnlinePaymentNotification extends Notification
 	public $orderId;
 	public $paymentStatus;
 	public $paymentMethod;
+	public $pay_urls;
 
 	/**
 	 * Create a new notification instance.
 	 */
-	public function __construct($orderId, $paymentStatus, $paymentMethod)
+	public function __construct($orderId, $paymentStatus, $paymentMethod, $pay_urls = null, ?string $message = null)
 	{
 		$this->orderId = $orderId;
 		$this->paymentStatus = $paymentStatus ?? 'pending';
 		$this->paymentMethod = $paymentMethod;
+		$this->pay_urls = $pay_urls;
 		Log::info("OnlinePaymentEvent created for order {$orderId}, status: {$paymentStatus}, method: {$paymentMethod}");
 	}
 
@@ -59,6 +61,7 @@ class OnlinePaymentNotification extends Notification
 			'order_id' => $this->orderId,
 			'payment_status' => $this->paymentStatus,
 			'payment_method' => $this->paymentMethod,
+			'pay_urls' => $this->pay_urls,
 			'timestamp' => now()->toIso8601String(),
 		];
 	}

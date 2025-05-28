@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\VoucherController;
 use App\Services\MomoPaymentService;
+use App\Notifications\OnlinePaymentNotification;
 
 class OrderController extends Controller
 {
@@ -186,6 +187,13 @@ class OrderController extends Controller
 					return response()->json(['message' => $paymentCreationInfo['message']], 500);
 				} else {
 					$responseData['pay_urls'] = $paymentCreationInfo['payUrls']; // Attach generated payment URLs to response
+					// Notify user
+					$user->notify(new OnlinePaymentNotification(
+						$order->order_id,
+						"created", // payment stauts
+						Constants::PAYMENT_METHOD_MOMO,
+						json_encode($paymentCreationInfo['payUrls'])
+					));
 				}
 				break;
 		}
@@ -482,26 +490,7 @@ class OrderController extends Controller
 			}
 
 			return response()->json([
-				'success' => true,
-				'order' => [
-					'order_id' => $order->order_id,
-					'status' => $order->order_status,
-					'created_at' => $order->created_at,
-					'updated_at' => $order->updated_at,
-					'deliver_time' => $order->order_deliver_time,
-					'deliver_address' => $order->order_deliver_address,
-					'total_price' => $order->order_total_price,
-					'items' => $order->order_items->map(function ($item) {
-						return [
-							'product_id' => $item->product_id,
-							'product_name' => $item->product->product_name,
-							'quantity' => $item->order_items_quantity,
-							'size' => $item->order_items_size,
-							'unit_price' => $item->order_items_unitprice,
-							'discount_amount' => $item->order_items_discounted_amount,
-						];
-					})
-				]
+				'order_status' => $order->order_status,
 			]);
 
 		} catch (\Illuminate\Validation\ValidationException $e) {

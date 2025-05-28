@@ -15,7 +15,6 @@ class OrderStatusNotification extends Notification
 	protected $order;
 	protected $status;
 	protected $message;
-
 	/**
 	 * Create a new notification instance.
 	 */

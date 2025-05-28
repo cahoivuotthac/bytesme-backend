@@ -20,7 +20,7 @@ class UserSeeder extends Seeder
 		if (!$hasAdminUser) {
 			User::create([
 				'name' => 'Nguyễn Văn Admin',
-				'email' => 'admin@example.com',
+				'email' => 'admin2@example.com',
 				'password' => bcrypt('password'),
 				'phone_number' => fake()->numerify(fake()->randomElement(['#########', '##########'])),
 				'role_type' => 1,

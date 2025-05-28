@@ -14,9 +14,10 @@ class DatabaseSeeder extends Seeder
 	{
 		// Create mock data
 		$this->call([
-			VoucherSeeder::class,  // Run VoucherSeeder before VoucherRuleSeeder
-			VoucherRuleSeeder::class,
-			OrderSeeder::class,
+			UserSeeder::class,
+			// VoucherSeeder::class,  // Run VoucherSeeder before VoucherRuleSeeder
+			// VoucherRuleSeeder::class,
+			// OrderSeeder::class,
 		]);
 	}
 }

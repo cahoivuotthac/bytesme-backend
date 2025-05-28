@@ -432,23 +432,26 @@ class AuthController extends Controller
 	public function handleAdminLogin(Request $request)
 	{
 		try {
-			$username = $request->input('username');
+			Log::info("Handling admin login");
+			$email = $request->input('email');
 			$password = $request->input('password');
 
 			// Validate the password
-			$password = $this->credentialsValidatorService->validateAndReturnPassword($password);
+			// $password = $this->credentialsValidatorService->validateAndReturnPassword($password);
 
 			// Find the user with the admin role
-			$user = User::where('user_name', $username)
+			$user = User::where('email', $email)
 				->where('role_type', 1)
 				->first();
 
 			if (!$user) {
 				Log::debug('User not found or not an admin', [
-					'username' => $username,
+					'email' => $email,
 				]);
 				throw new Exception("Invalid credentials");
 			}
+
+			Log::info('Fuck you');
 
 			// Verify password
 			if (!password_verify($password, $user->password)) {
@@ -464,7 +467,7 @@ class AuthController extends Controller
 		} catch (Exception $e) {
 			Log::error("Admin login error", [
 				'error' => $e->getMessage(),
-				'username' => $username ?? 'not provided'
+				'username' => $email ?? 'not provided'
 			]);
 			return redirect()->back()->withErrors($e->getMessage());
 		}
