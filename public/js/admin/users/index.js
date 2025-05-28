@@ -61,24 +61,30 @@ function loadUserAnalytics() {
         method: 'GET',
         success: function(response) {
             if (response.success) {
-                renderUserMetricsCards(response.data.overview);
-                renderRegistrationChart(response.data.monthly_registrations);
+                renderMetricsCards(response.data.overview);
                 renderRoleChart(response.data.role_distribution);
+                renderRegistrationChart(response.data.monthly_registrations);
                 renderActivityChart(response.data.activity_pattern);
                 renderSegmentChart(response.data.customer_segments);
                 renderTopSpendersList(response.data.top_spenders);
                 renderGeographicList(response.data.geographic_data);
+                
+                // New feedback analytics
+                renderFeedbackRatingChart(response.data.feedback_stats);
+                renderImproveTagsChart(response.data.improve_tags);
+                renderMonthlyFeedbackChart(response.data.monthly_feedbacks);
+                renderLowRatingFeedbacksList(response.data.low_rating_feedbacks);
             } else {
-                showAlert('error', 'Không thể tải dữ liệu phân tích người dùng');
+                showAlert('error', 'Không thể tải dữ liệu phân tích');
             }
         },
         error: function() {
-            showAlert('error', 'Có lỗi khi tải dữ liệu phân tích người dùng');
+            showAlert('error', 'Có lỗi khi tải dữ liệu phân tích');
         }
     });
 }
 
-function renderUserMetricsCards(overview) {
+function renderMetricsCards(overview) {
     const metricsHtml = `
         <div class="metric-card">
             <div class="metric-icon users">
@@ -442,4 +448,208 @@ function showAlert(type, message) {
         icon: type,
         title: message
     });
+}
+
+function renderFeedbackRatingChart(feedbackStats) {
+    const ctx = document.getElementById('feedbackRatingChart').getContext('2d');
+    
+    const ratingData = [
+        feedbackStats.five_star || 0,
+        feedbackStats.four_star || 0,
+        feedbackStats.three_star || 0,
+        feedbackStats.two_star || 0,
+        feedbackStats.one_star || 0
+    ];
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['5 ⭐', '4 ⭐', '3 ⭐', '2 ⭐', '1 ⭐'],
+            datasets: [{
+                data: ratingData,
+                backgroundColor: [
+                    '#28a745',
+                    '#8bc34a',
+                    '#ffc107',
+                    '#ff9800',
+                    '#f44336'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderImproveTagsChart(improveTagsData) {
+    const ctx = document.getElementById('improveTagsChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: improveTagsData.map(item => item.tag_name),
+            datasets: [{
+                label: 'Số lượng góp ý',
+                data: improveTagsData.map(item => item.count),
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 205, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(153, 102, 255, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 205, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderMonthlyFeedbackChart(monthlyData) {
+    const ctx = document.getElementById('monthlyFeedbackChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: monthlyData.map(item => {
+                const date = new Date(item.month + '-01');
+                return date.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' });
+            }),
+            datasets: [{
+                label: 'Số phản hồi',
+                data: monthlyData.map(item => item.total_feedbacks),
+                borderColor: '#435E53',
+                backgroundColor: 'rgba(67, 94, 83, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                yAxisID: 'y'
+            }, {
+                label: 'Điểm trung bình',
+                data: monthlyData.map(item => parseFloat(item.avg_rating || 0).toFixed(1)),
+                borderColor: '#ffc107',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                borderWidth: 3,
+                fill: false,
+                tension: 0.4,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Số phản hồi'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    min: 0,
+                    max: 5,
+                    title: {
+                        display: true,
+                        text: 'Điểm trung bình'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderLowRatingFeedbacksList(lowRatingData) {
+    const feedbacksHtml = lowRatingData.map(feedback => {
+        const tagsHtml = feedback.improve_tags.map(tag => {
+            const tagName = getTagDisplayName(tag);
+            return `<span class="improve-tag improve-tag-${tag}">${tagName}</span>`;
+        }).join('');
+        
+        const stars = '★'.repeat(feedback.rating) + '☆'.repeat(5 - feedback.rating);
+        const date = new Date(feedback.created_at).toLocaleDateString('vi-VN');
+        
+        return `
+            <div class="low-rating-item">
+                <div class="feedback-header">
+                    <div class="feedback-user">${feedback.user_name}</div>
+                    <div class="feedback-rating">${stars}</div>
+                    <div class="feedback-date">${date}</div>
+                </div>
+                <div class="feedback-content">${feedback.content || 'Không có nội dung'}</div>
+                <div class="feedback-tags">${tagsHtml}</div>
+            </div>
+        `;
+    }).join('');
+    
+    $('#lowRatingFeedbacksList').html(feedbacksHtml || '<div class="no-data">Không có phản hồi đánh giá thấp</div>');
+}
+
+function getTagDisplayName(tag) {
+    const tagNames = {
+        'flavour': 'Hương vị',
+        'act-of-service': 'Dịch vụ',
+        'packaging': 'Đóng gói',
+        'delivery-time': 'Giao hàng'
+    };
+    return tagNames[tag] || tag;
 }

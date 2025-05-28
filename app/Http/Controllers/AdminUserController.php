@@ -250,6 +250,82 @@ class AdminUserController extends Controller
                 ")
 				->first();
 
+			// Feedback Analytics with Improve Tags
+			$feedbackStats = DB::table('order_feedbacks')
+				->selectRaw('
+					COUNT(*) as total_feedbacks,
+					AVG(num_star) as avg_rating,
+					COUNT(CASE WHEN num_star = 5 THEN 1 END) as five_star,
+					COUNT(CASE WHEN num_star = 4 THEN 1 END) as four_star,
+					COUNT(CASE WHEN num_star = 3 THEN 1 END) as three_star,
+					COUNT(CASE WHEN num_star = 2 THEN 1 END) as two_star,
+					COUNT(CASE WHEN num_star = 1 THEN 1 END) as one_star
+				')
+				->first();
+
+			// Improve Tags Distribution
+			$improveTagsStats = DB::table('feedback_improve_tags')
+				->select('tag', DB::raw('COUNT(*) as count'))
+				->groupBy('tag')
+				->orderBy('count', 'desc')
+				->get()
+				->map(function ($item) {
+					$tagName = match ($item->tag) {
+						'flavour' => 'Hương vị',
+						'act-of-service' => 'Dịch vụ khách hàng',
+						'packaging' => 'Đóng gói',
+						'delivery-time' => 'Thời gian giao hàng',
+						default => ucfirst($item->tag)
+					};
+					return [
+						'tag' => $item->tag,
+						'tag_name' => $tagName,
+						'count' => $item->count
+					];
+				});
+
+			// Monthly feedback trends
+			$monthlyFeedbacks = DB::table('order_feedbacks')
+				->selectRaw("
+					TO_CHAR(created_at, 'YYYY-MM') as month,
+					COUNT(*) as total_feedbacks,
+					AVG(num_star) as avg_rating
+				")
+				->where('created_at', '>=', now()->subMonths(12))
+				->groupBy('month')
+				->orderBy('month')
+				->get();
+
+			// Low rating feedbacks with improve tags
+			$lowRatingFeedbacks = DB::table('order_feedbacks')
+				->leftJoin('feedback_improve_tags', 'order_feedbacks.order_feedback_id', '=', 'feedback_improve_tags.order_feedback_id')
+				->leftJoin('users', 'order_feedbacks.user_id', '=', 'users.user_id')
+				->select([
+					'order_feedbacks.order_feedback_id',
+					'order_feedbacks.feedback_content',
+					'order_feedbacks.num_star',
+					'order_feedbacks.created_at',
+					'users.name as user_name',
+					'feedback_improve_tags.tag'
+				])
+				->where('order_feedbacks.num_star', '<=', 2)
+				->orderBy('order_feedbacks.created_at', 'desc')
+				->limit(10)
+				->get()
+				->groupBy('order_feedback_id')
+				->map(function ($feedbacks) {
+					$feedback = $feedbacks->first();
+					return [
+						'feedback_id' => $feedback->order_feedback_id,
+						'content' => $feedback->feedback_content,
+						'rating' => $feedback->num_star,
+						'user_name' => $feedback->user_name ?? 'Ẩn danh',
+						'created_at' => $feedback->created_at,
+						'improve_tags' => $feedbacks->pluck('tag')->filter()->unique()->values()
+					];
+				})
+				->values();
+
 			return response()->json([
 				'success' => true,
 				'data' => [
@@ -265,7 +341,11 @@ class AdminUserController extends Controller
 					'activity_pattern' => $activityPattern,
 					'geographic_data' => $geographicData,
 					'customer_segments' => $customerSegments,
-					'avg_order_stats' => $avgOrderStats
+					'avg_order_stats' => $avgOrderStats,
+					'feedback_stats' => $feedbackStats,
+					'improve_tags' => $improveTagsStats,
+					'monthly_feedbacks' => $monthlyFeedbacks,
+					'low_rating_feedbacks' => $lowRatingFeedbacks
 				]
 			]);
 		} catch (\Exception $e) {

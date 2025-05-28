@@ -130,6 +130,44 @@
                         <div class="chart-container">
                             <div class="chart-header">
                                 <div>
+                                    <h3 class="chart-title">Đánh giá tổng quan</h3>
+                                    <p class="chart-subtitle">Phân bố số sao đánh giá</p>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="feedbackRatingChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <div>
+                                    <h3 class="chart-title">Góp ý cải thiện</h3>
+                                    <p class="chart-subtitle">Khách hàng muốn cải thiện gì</p>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="improveTagsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <div>
+                                    <h3 class="chart-title">xu hướng phản hồi</h3>
+                                    <p class="chart-subtitle">12 tháng gần nhất</p>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="monthlyFeedbackChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <div>
                                     <h3 class="chart-title">Top khách hàng VIP</h3>
                                     <p class="chart-subtitle">Theo tổng chi tiêu</p>
                                 </div>
@@ -141,15 +179,17 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
 
+                    <div class="charts-grid">
                         <div class="chart-container">
                             <div class="chart-header">
                                 <div>
-                                    <h3 class="chart-title">Phân bố địa lý</h3>
-                                    <p class="chart-subtitle">Top 10 thành phố</p>
+                                    <h3 class="chart-title">Phản hồi đánh giá thấp</h3>
+                                    <p class="chart-subtitle">Cần chú ý cải thiện</p>
                                 </div>
                             </div>
-                            <div id="geographicList" class="geographic-list">
+                            <div id="lowRatingFeedbacksList" class="low-rating-list">
                                 <div class="chart-loading">
                                     <div class="loading-spinner"></div>
                                     Đang tải...
