@@ -62,7 +62,8 @@ class AdminVoucherController extends Controller
 			$endDate = Carbon::createFromFormat('d-m-Y H:i', $request->end_date);
 
 			$voucher = Voucher::create([
-				'voucher_name' => $request->voucher_name,
+				'voucher_name' => $request->voucher_code,
+				'voucher_code' => $request->voucher_code,
 				'voucher_type' => $request->voucher_type,
 				'voucher_description' => $request->description,
 				'voucher_start_date' => $startDate,

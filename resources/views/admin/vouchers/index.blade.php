@@ -86,7 +86,7 @@
 						<tr>
 							 <th>
 								Mã 
-								<i class="mdi sort-icon mdi-arrow-up-down" data-sort="voucher_name"></i>
+								<i class="mdi sort-icon mdi-arrow-up-down" data-sort="voucher_code"></i>
 							</th>
 							<th>Mô tả</th>
 							<th>Loại</th>
@@ -104,7 +104,7 @@
 					<tbody>
 						@foreach($vouchers as $voucher)
 							<tr class="voucher-row">
-								<td class="voucher-code">{{ $voucher->voucher_name }}</td>
+								<td class="voucher-code">{{ $voucher->voucher_code }}</td>
 								<td>{{ $voucher->voucher_description }}</td>
 								<td>
 									@if ($voucher->voucher_type == 'percentage')

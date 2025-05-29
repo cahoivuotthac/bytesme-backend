@@ -14,7 +14,7 @@
 							<div class="form-group">
 								<label class="vintage-label">Mã voucher <span class="text-danger">*</span></label>
 								<input type="text" class="form-control vintage-input inactive-muted-text"
-									id="voucher_name" name="voucher_name" required placeholder="VD: SUMMER2024">
+									id="voucher_name" name="voucher_code" required placeholder="VD: SUMMER2024">
 							</div>
 						</div>
 						<div class="col-md-6">
@@ -53,24 +53,16 @@
 						<div class="col-md-4">
 							<div class="form-group">
 								<label class="vintage-label">Ngày bắt đầu <span class="text-danger">*</span></label>
-									<input type="text" 
-										class="form-control vintage-input inactive-muted-text flatpickr" 
-										id="start_date" 
-										name="start_date" 
-										placeholder="Chọn ngày và giờ bắt đầu"
-										required>
+								<input type="text" class="form-control vintage-input inactive-muted-text flatpickr"
+									id="start_date" name="start_date" placeholder="Chọn ngày và giờ bắt đầu" required>
 							</div>
 						</div>
 
 						<div class="col-md-4">
 							<div class="form-group">
 								<label class="vintage-label">Ngày kết thúc <span class="text-danger">*</span></label>
-									<input type="text"
-										class="form-control vintage-input inactive-muted-text flatpickr" 
-										id="end_date" 
-										name="end_date"
-										placeholder="Chọn ngày và giờ kết thúc"
-										required>
+								<input type="text" class="form-control vintage-input inactive-muted-text flatpickr"
+									id="end_date" name="end_date" placeholder="Chọn ngày và giờ kết thúc" required>
 							</div>
 						</div>
 
