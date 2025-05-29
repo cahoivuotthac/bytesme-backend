@@ -44,12 +44,12 @@ class FeedbackController extends Controller
 			]);
 
 			// Update products' total ratings and overall stars
-			$orderFeedback->orderItems()->each(function ($item) use ($validatedData) {
-				$item->product->increment('product_total_ratings', 1);
+			$orderFeedback->order->order_items()->each(function ($item) use ($validatedData) {
+				$item->product->increment('total_ratings', 1);
 				$item->product->update([
-					'product_overall_stars' => $item->product->product_total_ratings > 0 ?
-						($item->product->product_overall_stars * ($item->product->product_total_ratings - 1) + $validatedData['rating']) /
-						$item->product->product_total_ratings : $validatedData['rating']
+					'overall_stars' => $item->product->total_ratings > 0 ?
+						($item->product->overall_stars * ($item->product->total_ratings - 1) + $validatedData['rating']) /
+						$item->product->total_ratings : $validatedData['rating']
 				]);
 			});
 
