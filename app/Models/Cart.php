@@ -28,13 +28,15 @@ class Cart extends Model
 	protected $table = 'carts';
 	protected $primaryKey = 'cart_id';
 
-	public $incrementing = true;
+	public $incrementing = false;
 
 	protected $casts = [
+		'cart_id' => 'int',
 		'cart_items_count' => 'int'
 	];
 
 	protected $fillable = [ //mass-assigned
+		'cart_id',
 		'cart_items_count'
 	];
 

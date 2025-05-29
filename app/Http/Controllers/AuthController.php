@@ -181,7 +181,9 @@ class AuthController extends Controller
 				'cart_id' => null,
 			]);
 			Log::debug("user id: " . $user->user_id);
-			$cart = Cart::create();
+			$cart = Cart::create([
+				'cart_id' => Cart::max('cart_id') + 1
+			]);
 			$user->cart_id = $cart->cart_id;
 			$user->save();
 			$otp->delete();
@@ -301,10 +303,11 @@ class AuthController extends Controller
 				$name = $socialUser->getName() ?? $emailPrefix;
 
 				$cart = Cart::create(attributes: [
+					'cart_id' => Cart::max('cart_id') + 1,
 					'items_count' => 0,
 				]);
 
-				$user = User::create([
+				$user = User::create(attributes: [
 					'email' => $email,
 					'avatar' => $avatar,
 					'name' => $name,
