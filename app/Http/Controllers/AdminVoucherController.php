@@ -6,7 +6,7 @@ use App\Models\Voucher;
 use App\Models\VoucherRule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Log;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class AdminVoucherController extends Controller
