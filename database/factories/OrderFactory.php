@@ -80,22 +80,22 @@ class OrderFactory extends Factory
 			$order->order_provisional_price = $subtotal;
 			$order->order_total_price = $subtotal + $order->order_deliver_cost;
 
-			// Apply voucher/coupon if available
-			if (!empty($order->voucher)) {
-				// switch ($order->voucher->voucher_type) {
-				// 	case 'cash':
-				// 		$order->order_total_price -= $order->voucher->value;
-				// 		break;
-				// 	default:
-				// 		$order->total_price *= 1 - $order->voucher->value / 100;
-				// 		break;
-				// }
-				OrderController::applyVoucher(
-					$order->voucher,
-					$order,
-					$orderItems
-				);
-			}
+			// // Apply voucher/coupon if available
+			// if (!empty($order->voucher)) {
+			// 	// switch ($order->voucher->voucher_type) {
+			// 	// 	case 'cash':
+			// 	// 		$order->order_total_price -= $order->voucher->value;
+			// 	// 		break;
+			// 	// 	default:
+			// 	// 		$order->total_price *= 1 - $order->voucher->value / 100;
+			// 	// 		break;
+			// 	// }
+			// 	OrderController::applyVoucher(
+			// 		$order->voucher,
+			// 		$order,
+			// 		$orderItems
+			// 	);
+			// }
 			$order->save();
 		});
 	}
