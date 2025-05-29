@@ -65,6 +65,7 @@ class AdminVoucherController extends Controller
 				'voucher_name' => $request->voucher_code,
 				'voucher_code' => $request->voucher_code,
 				'voucher_type' => $request->voucher_type,
+				'voucher_fields' =>'shop_related',
 				'voucher_description' => $request->description,
 				'voucher_start_date' => $startDate,
 				'voucher_end_date' => $endDate,
@@ -76,8 +77,8 @@ class AdminVoucherController extends Controller
 				foreach ($request->rules as $rule) {
 					VoucherRule::create([
 						'voucher_id' => $voucher->voucher_id,
-						'rule_type' => $rule['type'],
-						'rule_value' => $rule['value'] ?? 0,
+						'voucher_rule_type' => $rule['type'],
+						'voucher_rule_value' => $rule['value'] ?? 0,
 					]);
 				}
 			}
