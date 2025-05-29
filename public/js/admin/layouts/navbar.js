@@ -90,41 +90,41 @@ document.addEventListener("DOMContentLoaded", function () {
     fetchUnreadNotifcations();
 
     // Listen for new notification events on the 'orders' channel
-    echo.channel("order-status").listen(".OrderStatusEvent", (event) => {
-        // Optional: Show toast notification
-        const title =
-            event.orderStatus === "pending"
-                ? `Đơn hàng mới #${event.orderId}!`
-                : `Đơn hàng #${event.orderId} đã được cập nhật!`;
-        if (event.newStatus === "pending") {
-            Swal.fire({
-                toast: true,
-                position: "top-end",
-                icon: "success",
-                title: title,
-                showConfirmButton: false,
-                timer: 3000,
-            });
-            fetchUnreadNotifcations();
-        }
-    });
+    // echo.channel("order-status").listen(".OrderStatusEvent", (event) => {
+    //     // Optional: Show toast notification
+    //     const title =
+    //         event.orderStatus === "pending"
+    //             ? `Đơn hàng mới #${event.orderId}!`
+    //             : `Đơn hàng #${event.orderId} đã được cập nhật!`;
+    //     if (event.newStatus === "pending") {
+    //         Swal.fire({
+    //             toast: true,
+    //             position: "top-end",
+    //             icon: "success",
+    //             title: title,
+    //             showConfirmButton: false,
+    //             timer: 3000,
+    //         });
+    //         fetchUnreadNotifcations();
+    //     }
+    // });
 
-    echo.channel("online-payment").listen(".OnlinePaymentEvent", (event) => {
-        const title =
-            event.paymentStatus === "success"
-                ? `Đơn hàng #${event.orderId} đã thanh toán online!`
-                : `Đơn hàng #${event.orderId} thanh toán online thất bại!`;
+    // echo.channel("online-payment").listen(".OnlinePaymentEvent", (event) => {
+    //     const title =
+    //         event.paymentStatus === "success"
+    //             ? `Đơn hàng #${event.orderId} đã thanh toán online!`
+    //             : `Đơn hàng #${event.orderId} thanh toán online thất bại!`;
 
-        Swal.fire({
-            toast: true,
-            position: "top-end",
-            icon: "success",
-            title: title,
-            showConfirmButton: false,
-            timer: 3000,
-        });
-        fetchUnreadNotifcations();
-    });
+    //     Swal.fire({
+    //         toast: true,
+    //         position: "top-end",
+    //         icon: "success",
+    //         title: title,
+    //         showConfirmButton: false,
+    //         timer: 3000,
+    //     });
+    //     fetchUnreadNotifcations();
+    // });
 
     // Handle notifications dropdown item click
     $(document).on(
