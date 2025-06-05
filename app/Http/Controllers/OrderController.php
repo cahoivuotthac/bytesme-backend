@@ -419,8 +419,6 @@ class OrderController extends Controller
 
 				// Payment method-specific logic
 				if ($order->order_payment_method === Constants::PAYMENT_METHOD_MOMO) {
-					Log::info('Order cancelled with Momo payment, refund logic not implemented yet');
-
 					// Refund momo money to customer
 					$momoService = app(MomoPaymentService::class);
 					$refundResult = $momoService->refundPaymentForOrder(
