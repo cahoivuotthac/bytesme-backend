@@ -113,7 +113,7 @@ Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
 		Route::post('/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
 		Route::post('/delete', [NotificationController::class, 'deleteNotifications']);
 		// Route::get('/{id}', [NotificationController::class, 'getNotificationById']);
-		Route::post('/add-push-token', [UserController::class, 'addPushToken']);
+		Route::post('/update-push-token', [NotificationController::class, 'updatePushToken']);
 	});
 
 	Route::get('/test', function () {

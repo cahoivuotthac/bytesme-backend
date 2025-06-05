@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class UserController extends Controller
 {
@@ -359,59 +360,6 @@ class UserController extends Controller
 				'success' => false,
 				'message' => 'Failed to update user password',
 				'error' => $e->getMessage()
-			], 500);
-		}
-	}
-
-	public function addPushToken()
-	{
-		try {
-			request()->validate([
-				'push_token' => 'required|string|max:255',
-			]);
-		} catch (Exception $e) {
-			Log::error("Validation failed: " . $e->getMessage());
-			return response()->json([
-				'message' => 'Bad input data: ' . $e->getMessage(),
-			], 400);
-		}
-
-		$user = Auth::user();
-		$expoPushToken = request()->input('push_token');
-
-		if (!$expoPushToken) {
-			return response()->json([
-				'success' => false,
-				'message' => 'Expo push token is required'
-			], 400);
-		}
-
-		try {
-			$existingToken = $user->expo_push_tokens()
-				->where('expo_push_token', $expoPushToken)
-				->first();
-			if ($existingToken) {
-				// $existingToken->push_token = $expoPushToken;
-				// $existingToken->save();
-				Log::debug("Existing push token already exist, no need update" . $expoPushToken);
-				return response()->json([
-					'message' => 'Expo push token already exists, no update needed'
-				]);
-			} else {
-				ExpoPushToken::create([
-					'user_id' => $user->user_id,
-					'expo_push_token' => $expoPushToken,
-				]);
-				Log::debug("Created new expo push token: " . $expoPushToken);
-			}
-
-			return response()->json([
-				'message' => 'Expo push token updated successfully'
-			]);
-		} catch (Exception $e) {
-			Log::error("Failed to update expo push token: " . $e->getMessage());
-			return response()->json([
-				'message' => 'Failed to update expo push token',
 			], 500);
 		}
 	}

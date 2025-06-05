@@ -13,6 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Laravel\Sanctum\HasApiTokens;
+use Laravel\Sanctum\PersonalAccessToken;
 
 /**
  * Class User
@@ -115,8 +116,17 @@ class User extends Authenticatable
 		return $this->hasMany(UserAddress::class, 'user_id', 'user_id');
 	}
 
-	public function expo_push_tokens()
+	public function personal_access_tokens()
 	{
-		return $this->hasMany(ExpoPushToken::class, 'user_id', 'user_id');
+		return $this->morphMany(PersonalAccessToken::class, 'tokenable');
+	}
+
+	public function expo_push_notifications()
+	{
+		return $this->personal_access_tokens()
+			->pluck('expo_push_token') // Return a Collection already, not a query builder
+			->filter() // Remove any null/empty values
+			->values() // Reset array keys
+			->toArray(); // Convert to plain array
 	}
 }

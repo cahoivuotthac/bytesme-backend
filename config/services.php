@@ -3,16 +3,16 @@
 return [
 
 	/*
-	   |--------------------------------------------------------------------------
-	   | Third Party Services
-	   |--------------------------------------------------------------------------
-	   |
-	   | This file is for storing the credentials for third party services such
-	   | as Mailgun, Postmark, AWS and more. This file provides the de facto
-	   | location for this type of information, allowing packages to have
-	   | a conventional file to locate the various service credentials.
-	   |
-	   */
+		  |--------------------------------------------------------------------------
+		  | Third Party Services
+		  |--------------------------------------------------------------------------
+		  |
+		  | This file is for storing the credentials for third party services such
+		  | as Mailgun, Postmark, AWS and more. This file provides the de facto
+		  | location for this type of information, allowing packages to have
+		  | a conventional file to locate the various service credentials.
+		  |
+		  */
 
 	'postmark' => [
 		'token' => env('POSTMARK_TOKEN'),
@@ -39,6 +39,10 @@ return [
 		'access_key' => env('MOMO_ACCESS_KEY'),
 		'store_id' => env('MOMO_STORE_ID'),
 		'secret_key' => env('MOMO_SECRET_KEY'),
+	],
+
+	'expo' => [
+		'push_notification_url' => env('EXPO_PUSH_NOTIFICATION_URL', 'https://exp.host/--/api/v2/push/send'),
 	],
 
 	'bytesme_intelligence' => [

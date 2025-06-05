@@ -8,13 +8,11 @@ use App\Constants;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Voucher;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\VoucherController;
 use App\Services\MomoPaymentService;
-use App\Notifications\OnlinePaymentNotification;
 
 class OrderController extends Controller
 {
@@ -177,24 +175,19 @@ class OrderController extends Controller
 			case Constants::PAYMENT_METHOD_MOMO:
 				$momoService = app(MomoPaymentService::class);
 				$paymentCreationInfo = $momoService->createPaymentIntent(
-					$order->order_id,
-					'', // Order info
+					$order,
+					'', // Order info for momo provider
 					$order->order_total_price, // amount
 					$validatedInput['language'] ?? 'vi',
 				);
 				Log::debug('Momo payment creation response:', [$paymentCreationInfo]);
-				if ($paymentCreationInfo['success'] === false) {
+
+				if ($paymentCreationInfo['success'] === true) {
+					// Attach generated payment URLs to response
+					$responseData['pay_urls'] = $paymentCreationInfo['payUrls'];
+				} else {
 					Log::error('Failed to create Momo payment intent: ');
 					return response()->json(['message' => $paymentCreationInfo['message']], 500);
-				} else {
-					$responseData['pay_urls'] = $paymentCreationInfo['payUrls']; // Attach generated payment URLs to response
-					// Notify user
-					$user->notify(new OnlinePaymentNotification(
-						$order->order_id,
-						"created", // payment stauts
-						Constants::PAYMENT_METHOD_MOMO,
-						json_encode($paymentCreationInfo['payUrls'])
-					));
 				}
 				break;
 		}
@@ -401,30 +394,32 @@ class OrderController extends Controller
 					], 422);
 				}
 
-				if ($order->order_payment_method === Constants::PAYMENT_METHOD_MOMO) {
-					// If the order was paid via Momo, refund logic should be implemented here
-					// For now, we just log it
-					Log::info('Order cancelled with Momo payment, refund logic not implemented yet');
-
-					// Revert the stock quantities and total_orders for the cancelled order items
-					$order_items = $order->order_items()->get();
-					$order_items->each(function ($item) {
-						$product = $item->product;
-						if ($product) {
-							$product->product_stock_quantity += $item->order_items_quantity;
-							if ($product->product_total_orders >= $item->order_items_quantity) {
-								$product->product_total_orders -= $item->order_items_quantity;
-							} else {
-								// Prevent negative total orders
-								$product->product_total_orders = 0;
-							}
-							$product->save();
+				// Revert the stock quantities and total_orders of order items
+				$order_items = $order->order_items()->get();
+				$order_items->each(function ($item) {
+					$product = $item->product;
+					if ($product) {
+						$product->product_stock_quantity += $item->order_items_quantity;
+						if ($product->product_total_orders >= $item->order_items_quantity) {
+							$product->product_total_orders -= $item->order_items_quantity;
+						} else {
+							// Prevent negative total orders
+							$product->product_total_orders = 0;
 						}
-					});
-					if ($order->voucher) {
-						$voucher_rules = $order->voucher->voucherRules()->get();
-						$this->unapplyVoucher($order->voucher, $voucher_rules, $order, $order->order_items, true);
+						$product->save();
 					}
+				});
+
+				// Revert vouchers effect if any
+				if ($order->voucher) {
+					$voucher_rules = $order->voucher->voucherRules()->get();
+					$this->unapplyVoucher($order->voucher, $voucher_rules, $order, $order->order_items, true);
+				}
+
+
+				// Payment method-specific logic
+				if ($order->order_payment_method === Constants::PAYMENT_METHOD_MOMO) {
+					Log::info('Order cancelled with Momo payment, refund logic not implemented yet');
 
 					// Refund momo money to customer
 					$momoService = app(MomoPaymentService::class);

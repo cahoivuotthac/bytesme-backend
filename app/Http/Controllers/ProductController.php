@@ -360,11 +360,15 @@ class ProductController extends Controller
 		}
 
 		$query = $request->input('query');
+		// This is session ID in LLM chatbot context, not sesion ID for authentication
+		$sessionId = $request->header('X-Session-ID', null);
 
 		// Forward request to Flask API (BytesMe Intelligence service)
 		$baseUrl = config('services.bytesme_intelligence.base_url', 'http://localhost:5000');
 		$response = Http::withHeaders([
 			'Content-Type' => 'application/json',
+			'X-Session-ID' => $sessionId, // Pass session ID if available
+
 		])
 			->withOptions([
 				'stream' => true,
@@ -374,6 +378,9 @@ class ProductController extends Controller
 			->get("{$baseUrl}/product/search/rag", [
 				'query' => $query
 			]);
+
+		// Get the X-Session-ID header value
+		$sessionId = $response->header('X-Session-ID');
 
 		// Stream response back to client and log the full LLM output
 		return response()->stream(function () use ($response) {
@@ -386,7 +393,10 @@ class ProductController extends Controller
 			}
 
 			$stream->close();
-		}, 200, ['Content-Type' => 'text/event-stream']);
+		}, 200, [
+			'Content-Type' => 'text/event-stream',
+			'X-Session-ID' => $sessionId, // Pass on the X-Session-ID to the client
+		]);
 	}
 
 	public function searchProductsSemantics(Request $request)

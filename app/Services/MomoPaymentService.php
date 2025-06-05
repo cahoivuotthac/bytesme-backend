@@ -2,27 +2,17 @@
 
 namespace App\Services;
 
+use App\Notifications\OnlinePaymentNotification;
 use App\Models\MomoServiceTransaction;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use App\Events\OnlinePaymentEvent;
 use App\Models\Order;
+use App\Models\User;
+use App\Constants;
 
 class MomoPaymentService
 {
-	// public function signData($payload, $secretKey)
-	// {
-	// 	$rawHash = "";
-	// 	ksort($payload);
-	// 	foreach ($payload as $key => $value) {
-	// 		$rawHash .= ($key . "=" . $value . "&");
-	// 	}
-	// 	$rawHash = rtrim($rawHash, "&");
-	// 	Log::debug('Raw hash for signing: ' . $rawHash);
-	// 	$sig = hash_hmac("sha256", $rawHash, $secretKey);
-	// 	Log::debug('Signature: ' . $sig);
-	// 	return $sig;
-	// }
-
 	private function signPaymentData($data, $secretKey)
 	{
 		$rawData = 'accessKey=' . $data['accessKey']
@@ -52,18 +42,16 @@ class MomoPaymentService
 		return hash_hmac("sha256", $rawData, $secretKey);
 	}
 
-	public function createPaymentIntent($orderId, $orderInfo, $amount, $lang = 'vi')
+	public function createPaymentIntent($order, $orderInfo, $amount, $lang = 'vi')
 	{
 		// Default order info
 		$defaultOrderInfo = 'Thanh toán đơn hàng Bytesme Bakery bằng ví MoMo';
 
 		// Validate input
-		if (empty($orderId) || empty($amount)) {
-			Log::debug('Payment requset failed: Invalid order ID or amount');
-			return response()->json(['message' => 'Invalid order ID or amount'], 400);
+		if (!$order || !$order->order_id || empty($amount)) {
+			Log::debug('Payment requset failed: Invalid order or amount');
+			return response()->json(['message' => 'Invalid order or amount'], 400);
 		}
-
-		Log::debug("App url is: " . config('app.url'));
 
 		// Only include fields required for signature in the correct order
 		$payloadForSign = [
@@ -71,8 +59,8 @@ class MomoPaymentService
 			'amount' => $amount,
 			'extraData' => '',
 			'ipnUrl' => config('app.url') . '/order/payment/momo/ipn-callback',
-			'orderId' => $orderId,
-			'orderInfo' => $defaultOrderInfo,
+			'orderId' => $order->order_id,
+			'orderInfo' => $ordrInfo ?? $defaultOrderInfo,
 			'partnerCode' => config('services.momo.partner_code'),
 			'redirectUrl' => config('app.url') . '/order/payment/momo/redirect-callback',
 			'requestId' => time() . "",
@@ -199,6 +187,19 @@ class MomoPaymentService
 					'message' => $responseData['message'],
 				];
 			}
+
+			// Try sending notification to user
+			try {
+
+				$user = $order->user;
+				$user->notify(new OnlinePaymentNotification(
+					$order->order_id,
+					"refunded",
+					Constants::PAYMENT_METHOD_MOMO,
+				));
+			} catch (\Exception $e) {
+				Log::error('(MomoPaymentService::refundPaymentForOrder) Failed to send notification due to error: ' . $e->getMessage());
+			}
 		} catch (\Exception $e) {
 			Log::debug('Refund request failed: ' . $e->getMessage());
 			return [
@@ -207,5 +208,121 @@ class MomoPaymentService
 				'code' => 'INTERNAL_ERROR'
 			];
 		}
+	}
+
+	public function handleIpnCallback($callbackData)
+	{
+		// Find the order by orderId
+		$order = Order::where('order_id', $callbackData['orderId'])->first();
+		$user = User::where('user_id', $order->user_id)->first();
+
+		if (!$order) {
+			Log::debug('Order not found: ' . json_encode($callbackData));
+			return response()->json([
+				'message' =>
+					'Order not found for IPN callback, requestId:' . $callbackData['requestId'] . ', orderId:' . $callbackData['orderId'],
+			], 404);
+		}
+		if (!$user) {
+			Log::debug('User not found: ' . json_encode($callbackData));
+			return response()->json([
+				'message' =>
+					'User not found for IPN callback, requestId:' . $callbackData['requestId'] . ', userId:' . $order->user_id,
+			], 404);
+		}
+
+		// Payment was unsuccessful
+		if ((int) $callbackData['resultCode'] !== 0) {
+			Log::debug('Payment successful: ' . json_encode($callbackData));
+			Log::debug('Payment failed: ' . json_encode($callbackData));
+			$order->order_is_paid = false;
+			$order->order_status = 'cancelled'; // cancel the order on payment failure
+			$order->save();
+
+			// Send direct websocket broadcast to user
+			broadcast(new OnlinePaymentEvent(
+				$order->order_id,
+				"failed", // payment stauts
+				Constants::PAYMENT_METHOD_MOMO
+			))->toOthers();
+
+			// Send notification to user
+			$user->notify(new OnlinePaymentNotification(
+				$order->order_id,
+				"failed", // payment stauts
+				Constants::PAYMENT_METHOD_MOMO
+			));
+
+			// Send notification to admin
+			User::where('role_type', 1)
+				->first()
+				->notify(new OnlinePaymentNotification(
+					$order->order_id,
+					"failed", // payment stauts
+					Constants::PAYMENT_METHOD_MOMO
+				));
+
+			return response()->json(['message' => 'Acknowledge payment unsuccessful'], 200);
+		}
+
+		// Payment was successful
+		if ((int) $callbackData['resultCode'] === 0) {
+			Log::debug('Payment successful: ' . json_encode($callbackData));
+			$order->order_is_paid = true;
+			$order->order_status = 'pending'; // set order status to pending (previously was online_payment_pending)
+			$order->order_payment_date = now();
+			$order->save();
+
+			// Save the transaction in the Momo service store
+			MomoServiceTransaction::create(
+				[
+					'transaction_id' => $callbackData['transId'],
+					'order_id' => $order->order_id
+				],
+			);
+
+			// Send direct websocket broadcast to user
+			broadcast(new OnlinePaymentEvent(
+				$order->order_id,
+				"success",
+				Constants::PAYMENT_METHOD_MOMO
+			))->toOthers();
+
+			// Send notification to user
+			$user->notify(new OnlinePaymentNotification(
+				$order->order_id,
+				"success", // payment stauts
+				Constants::PAYMENT_METHOD_MOMO
+			));
+
+			// Send notification to admin
+			User::where('role_type', 1)
+				->first()
+				->notify(new OnlinePaymentNotification(
+					$order->order_id,
+					"success",
+					Constants::PAYMENT_METHOD_MOMO
+				));
+		} else if ((int) $callbackData['resultCode'] === 1005) {
+			Log::debug('Payment timed out: ' . json_encode($callbackData));
+			$order->order_is_paid = false;
+			$order->order_status = 'cancelled'; // set order status to online_payment_pending
+			$order->save();
+
+			// Send direct websocket broadcast
+			broadcast(new OnlinePaymentEvent(
+				$order->order_id,
+				"timeout",
+				Constants::PAYMENT_METHOD_MOMO
+			))->toOthers();
+
+			// Send notification & events
+			$user->notify(new OnlinePaymentNotification(
+				$order->order_id,
+				"timeout",
+				Constants::PAYMENT_METHOD_MOMO
+			));
+		}
+
 	}
 }

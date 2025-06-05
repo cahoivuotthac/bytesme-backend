@@ -14,7 +14,7 @@ class OnlinePaymentEvent implements ShouldBroadcastNow
 	use Dispatchable, InteractsWithSockets, SerializesModels;
 
 	public $orderId;
-	public $paymentStatus; // success, failed
+	public $paymentStatus; // success, failed, refunded
 	public $paymentMethod; // momo, vnpay, etc. (providers)
 
 	public function __construct($orderId, $paymentStatus, $paymentMethod)

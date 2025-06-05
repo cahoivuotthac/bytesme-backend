@@ -5,9 +5,50 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+// use App\Models\User;
+use Laravel\Sanctum\PersonalAccessToken;
+use App\Services\PushNotificationService;
+use Exception;
 
 class NotificationController extends Controller
 {
+	public function updatePushToken(Request $request)
+	{
+		try {
+			request()->validate([
+				'push_token' => 'required|string|max:255',
+			]);
+		} catch (Exception $e) {
+			Log::error("Validation failed: " . $e->getMessage());
+			return response()->json([
+				'message' => 'Bad input data: ' . $e->getMessage(),
+			], 400);
+		}
+
+		try {
+			$bearerToken = $request->bearerToken();
+			Log::debug("Bearer token: " . $bearerToken);
+			$bearerToken = str_replace('Bearer', '', $bearerToken);
+			$bearerToken = trim($bearerToken);
+			Log::debug("Processed bearer token: " . $bearerToken);
+
+			// $user = Auth::user();
+			$expoPushToken = request()->input('push_token');
+			app(PushNotificationService::class)
+				->updatePushToken($bearerToken, $expoPushToken);
+
+			return response()->json([
+				'success' => true,
+				'message' => 'updated',
+			]);
+		} catch (Exception $e) {
+			Log::error("Failed to update expo push token: " . $e->getMessage());
+			return response()->json([
+				'message' => 'Failed to update expo push token',
+			], 500);
+		}
+	}
+
 	/**
 	 * Get all notifications for the authenticated user
 	 * 
@@ -33,7 +74,7 @@ class NotificationController extends Controller
 				'notifications' => $notifications,
 				'unread_count' => $user->unreadNotifications()->count()
 			]);
-		} catch (\Exception $e) {
+		} catch (Exception $e) {
 			Log::error('Failed to fetch notifications: ' . $e->getMessage());
 			return response()->json([
 				'success' => false,
@@ -66,7 +107,7 @@ class NotificationController extends Controller
 				'success' => true,
 				'notification' => $notification
 			]);
-		} catch (\Exception $e) {
+		} catch (Exception $e) {
 			Log::error('Failed to fetch notification: ' . $e->getMessage());
 			return response()->json([
 				'success' => false,
@@ -103,7 +144,7 @@ class NotificationController extends Controller
 				'message' => 'Notifications marked as read',
 				'unread_count' => $user->unreadNotifications()->count()
 			]);
-		} catch (\Exception $e) {
+		} catch (Exception $e) {
 			Log::error('Failed to mark notifications as read: ' . $e->getMessage());
 			return response()->json([
 				'success' => false,
@@ -123,7 +164,7 @@ class NotificationController extends Controller
 				'message' => 'All notifications marked as read',
 				'unread_count' => $user->unreadNotifications()->count()
 			]);
-		} catch (\Exception $e) {
+		} catch (Exception $e) {
 			Log::error('Failed to mark all notifications as read: ' . $e->getMessage());
 			return response()->json([
 				'success' => false,

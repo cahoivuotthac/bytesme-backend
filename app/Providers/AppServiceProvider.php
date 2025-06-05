@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
+use App\Channels\ExpoPushChannel;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Notifications\ChannelManager;
-// use App\Notifications\Channels\ExpoPushChannel;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,8 +21,8 @@ class AppServiceProvider extends ServiceProvider
 	 */
 	public function boot(): void
 	{
-		app(ChannelManager::class)->extend('expo', function ($app) {
-			return new \App\Notifications\Channels\ExpoPushChannel();
+		Notification::extend('expo_push', function ($app) {
+			return $app->make(ExpoPushChannel::class);
 		});
 	}
 }

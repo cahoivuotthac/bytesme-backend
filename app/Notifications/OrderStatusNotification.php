@@ -32,8 +32,7 @@ class OrderStatusNotification extends Notification
 	 */
 	public function via(object $notifiable): array
 	{
-		// We'll send this notification via the database and broadcast channels
-		return ['database', 'broadcast'];
+		return ['database', 'expo_push'];
 	}
 
 	/**
@@ -79,17 +78,43 @@ class OrderStatusNotification extends Notification
 
 	public function toExpoPush($notifiable): array
 	{
+		$title = "Bytesme: Tin từ Bếp Yêu 🍳"; // "Bytesme: News from the Beloved Kitchen 🍳"
+		$body = $this->message;
+
+		if (!$body) {
+			switch (strtolower($this->status)) {
+				case 'online_payment_pending':
+					$body = "Bytesme đang chờ thanh toán cho đơn hàng của bạn. Hoàn tất để Bytesme chuẩn bị món ngon nha! 💳✨";
+					break;
+				case 'pending':
+					$body = "Đơn hàng của bạn đang được Bytesme chuẩn bị nha. Xíu nữa thôi! 💖";
+					break;
+				case 'delivering':
+					$body = "Món ngon đang vèo vèo tới nè! Shipper Bytesme sắp gõ cửa rồi, bạn ơi! 🛵💨";
+					break;
+				case 'delivered':
+					$body = "Món ngon đã trao tay! Bytesme chúc bạn có một bữa ăn thật ấm cúng và ngon miệng nha! 🥰🍽️";
+					break;
+				case 'cancelled':
+					$body = "Đơn hàng Bytesme của bạn đã được hủy theo yêu cầu. Bytesme rất tiếc và mong sẽ sớm được phục vụ bạn lần sau! 🙁";
+					break;
+				default:
+					$body = "Đơn hàng Bytesme của bạn có cập nhật mới: {$this->status}. Xem chi tiết ngay bạn nhé! 😉";
+			}
+		}
+
 		return [
-			'body' => $this->message,
-			'title' => 'Order updated',
-			// 'sound' => 'default',
-			// 'priority' => 'high',
+			'title' => $title,
+			'body' => $body,
 			'data' => [
 				'order_id' => $this->order->order_id,
 				'status' => $this->status,
+				'type' => 'OrderStatusNotification', // Type for client-side routing/handling
 			],
+			'badge' => $notifiable->unreadNotifications()->count() + 1,
 		];
 	}
+
 
 	/**
 	 * Get the type of the notification being broadcast.

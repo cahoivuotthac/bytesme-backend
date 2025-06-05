@@ -13,20 +13,18 @@ class OnlinePaymentNotification extends Notification
 	// use Queueable;
 
 	public $orderId;
-	public $paymentStatus;
-	public $paymentMethod;
-	public $pay_urls;
+	public $paymentStatus; // success, failed, refunded
+	public $paymentMethod; // momo, vnpay, etc. (providers)
+	// public $pay_urls;
 
 	/**
 	 * Create a new notification instance.
 	 */
-	public function __construct($orderId, $paymentStatus, $paymentMethod, $pay_urls = null, ?string $message = null)
+	public function __construct($orderId, $paymentStatus, $paymentMethod)
 	{
 		$this->orderId = $orderId;
 		$this->paymentStatus = $paymentStatus ?? 'pending';
 		$this->paymentMethod = $paymentMethod;
-		$this->pay_urls = $pay_urls;
-		Log::info("OnlinePaymentEvent created for order {$orderId}, status: {$paymentStatus}, method: {$paymentMethod}");
 	}
 
 	/**
@@ -36,19 +34,8 @@ class OnlinePaymentNotification extends Notification
 	 */
 	public function via(object $notifiable): array
 	{
-		return ['database'];
+		return ['database', 'expo_push'];
 	}
-
-	/**
-	 * Get the mail representation of the notification.
-	 */
-	// public function toMail(object $notifiable): MailMessage
-	// {
-	// 	return (new MailMessage)
-	// 		->line('The introduction to the notification.')
-	// 		->action('Notification Action', url('/'))
-	// 		->line('Thank you for using our application!');
-	// }
 
 	/**
 	 * Get the array representation of the notification. (for db store)
@@ -61,29 +48,48 @@ class OnlinePaymentNotification extends Notification
 			'order_id' => $this->orderId,
 			'payment_status' => $this->paymentStatus,
 			'payment_method' => $this->paymentMethod,
-			'pay_urls' => $this->pay_urls,
 			'timestamp' => now()->toIso8601String(),
 		];
 	}
 
-	public function toBroadcast(object $notifiable): BroadcastMessage
+	public function toExpoPush(object $notifiable): array
 	{
-		return (new BroadcastMessage([
-			'message' => 'Your payment was successful!',
-			'order_id' => 12345,
-			'status' => 'Paid',
-			'timestamp' => now()->toIso8601String(),
-		]));
-	}
+		$title = 'Bytesme: Thông báo thanh toán'; // Default title
+		$body = "Trạng thái thanh toán cho đơn hàng #{$this->orderId} của bạn đã được cập nhật."; // Default body
 
-	public function broadcastType(): string
-	{
-		return 'OrderStatusNotification';
-	}
+		switch ($this->paymentStatus) {
+			case 'success':
+				$title = 'Bytesme: Thanh toán ngọt ngào thành công! 🍰';
+				$body = "Tuyệt vời! Đơn hàng #{$this->orderId} của bạn đã được thanh toán. Bytesme đang chuẩn bị những chiếc bánh xinh xắn, thơm lừng gửi đến bạn ngay đây!";
+				break;
+			case 'failed':
+				$title = 'Bytesme: Thanh toán chưa thành công 🥺';
+				$body = "Ôi chao! Thanh toán cho đơn hàng #{$this->orderId} gặp chút xíu trắc trở. Bạn kiểm tra lại thông tin hoặc thử phương thức khác để Bytesme sớm mang bánh ngon đến bạn nhé!";
+				break;
+			case 'refunded':
+				$title = 'Bytesme: Hoàn tiền thành công! 💸';
+				$body = "Bytesme đã hoàn tiền thành công cho đơn hàng #{$this->orderId}. Mong sớm được phục vụ bạn những mẻ bánh thơm ngon khác nha! 🥰";
+				break;
+			case 'pending':
+				$title = 'Bytesme: Thanh toán đang chờ xử lý ⏳';
+				$body = "Bytesme đang xử lý thanh toán cho đơn hàng #{$this->orderId} của bạn. Chúng mình sẽ thông báo ngay khi có kết quả nhé!";
+				break;
+			default:
+				$title = "Bytesme: Cập nhật trạng thái đơn hàng #{$this->orderId}";
+				$body = "Trạng thái thanh toán cho đơn hàng #{$this->orderId} của bạn là '{$this->paymentStatus}'. Bytesme sẽ sớm cập nhật thông tin chi tiết.";
+				break;
+		}
 
-	public function broadcastAs(): string
-	{
-		return 'OrderStatusNotification';
+		return [
+			'title' => $title,
+			'body' => $body,
+			'data' => [
+				'order_id' => $this->orderId,
+				'payment_status' => $this->paymentStatus,
+				'payment_method' => $this->paymentMethod,
+				'timestamp' => now()->toIso8601String(),
+				'type' => 'OnlinePaymentNotification'
+			],
+		];
 	}
-
 }
