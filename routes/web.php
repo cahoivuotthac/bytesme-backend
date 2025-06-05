@@ -151,7 +151,7 @@ Route::prefix('order')->middleware(['auth:sanctum'])->group(function () {
 			Route::post('/create-intent', [MomoPaymentController::class, 'createPaymentIntent'])->withoutMiddleware(['auth:sanctum']);
 			// Exclude auth:sanctum for these two routes
 			Route::post('/ipn-callback', [MomoPaymentController::class, 'handleIpnCallback'])->withoutMiddleware(['auth:sanctum']);
-			Route::get('/redirect-callback', [MomoPaymentController::class, 'handleRedirectCallback']);
+			Route::get('/redirect-callback', [MomoPaymentController::class, 'handleRedirectCallback'])->withoutMiddleware(['auth:sanctum']);
 		});
 	});
 });
