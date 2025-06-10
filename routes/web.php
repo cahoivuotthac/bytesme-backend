@@ -74,16 +74,6 @@ Route::prefix('product')->middleware('auth:sanctum')->group(function () {
 
 // Use sanctum auth middleware for user routes
 Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
-	Route::group(['prefix' => 'cart'], function () {
-		Route::get('/', [UserController::class, 'getCart']);
-		Route::get('/item-count', [UserController::class, 'getCartItemCount']);
-		Route::post('/add', [UserController::class, 'addToCart']);
-		Route::post('/remove', [UserController::class, 'removeFromCart']);
-		Route::post('/update', [UserController::class, 'updateCart']);
-		Route::post('/checkout', [UserController::class, 'checkout']);
-		Route::post('/replicate-order', [CartController::class, 'replicateOrder']);
-	});
-
 	Route::group(['prefix' => 'wishlist'], function () {
 		Route::get('/', [WishlistController::class, 'getWishlist']);
 		Route::post('/add', [WishlistController::class, 'addToWishlist']);
@@ -92,11 +82,13 @@ Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
 
 	Route::group(['prefix' => 'cart'], function () {
 		Route::get('/', [CartController::class, 'getCartItems']);
+		Route::get('/item-count', [UserController::class, 'getCartItemCount']);
 		Route::post('/add', [CartController::class, 'addToCart']);
 		Route::post('/remove', [CartController::class, 'removeFromCart']);
 		Route::post('/checkout', [CartController::class, 'checkout']);
 		Route::post('/update-item-quantity', [CartController::class, 'updateItemQuantity']);
 		Route::post('/update-item-size', [CartController::class, 'updateItemSize']);
+		Route::post('/replicate-order', [CartController::class, 'replicateOrder']);
 	});
 
 	Route::group(['prefix' => 'addresses'], function () {
