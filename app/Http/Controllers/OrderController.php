@@ -193,7 +193,7 @@ class OrderController extends Controller
 		}
 
 		// Clear cart items after placing order
-		if (env('APP_MODE') === 'production') {
+		if (config('app.env') === 'production') {
 			Log::info('(production env) Clearing cart items after placing order');
 			$cartItems->delete();
 		}
