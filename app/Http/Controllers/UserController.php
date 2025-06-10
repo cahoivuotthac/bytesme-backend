@@ -363,4 +363,26 @@ class UserController extends Controller
 			], 500);
 		}
 	}
+
+	public function getCartItemCount(Request $request)
+	{
+		$user = Auth::user();
+		$cart = $user->cart;
+
+		try {
+			$cartItemCount = $cart->items()->count();
+
+			return response()->json([
+				'success' => true,
+				'cart_item_count' => $cartItemCount
+			]);
+		} catch (Exception $e) {
+			Log::error("Failed to get cart item count: " . $e->getMessage());
+			return response()->json([
+				'success' => false,
+				'message' => 'Failed to get cart item count',
+				'error' => $e->getMessage()
+			], 500);
+		}
+	}
 }

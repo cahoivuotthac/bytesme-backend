@@ -211,4 +211,23 @@ class NotificationController extends Controller
 			], 500);
 		}
 	}
+
+	public function getUnreadCount(Request $request)
+	{
+		try {
+			$user = Auth::user();
+			$unreadCount = $user->unreadNotifications()->count();
+
+			return response()->json([
+				'success' => true,
+				'unread_count' => $unreadCount
+			]);
+		} catch (Exception $e) {
+			Log::error('Failed to fetch unread notifications count: ' . $e->getMessage());
+			return response()->json([
+				'success' => false,
+				'message' => 'Failed to fetch unread notifications count'
+			], 500);
+		}
+	}
 }

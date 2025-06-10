@@ -76,6 +76,7 @@ Route::prefix('product')->middleware('auth:sanctum')->group(function () {
 Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
 	Route::group(['prefix' => 'cart'], function () {
 		Route::get('/', [UserController::class, 'getCart']);
+		Route::get('/item-count', [UserController::class, 'getCartItemCount']);
 		Route::post('/add', [UserController::class, 'addToCart']);
 		Route::post('/remove', [UserController::class, 'removeFromCart']);
 		Route::post('/update', [UserController::class, 'updateCart']);
@@ -109,6 +110,7 @@ Route::prefix('user')->middleware(['auth:sanctum'])->group(function () {
 
 	Route::prefix('notification')->group(function () {
 		Route::get('/', [NotificationController::class, 'getNotifications']);
+		Route::get('/unread-count', [NotificationController::class, 'getUnreadCount']);
 		Route::post('/mark-as-read', [NotificationController::class, 'markAsRead']);
 		Route::post('/mark-all-as-read', [NotificationController::class, 'markAllAsRead']);
 		Route::post('/delete', [NotificationController::class, 'deleteNotifications']);
