@@ -192,6 +192,12 @@ class OrderController extends Controller
 				break;
 		}
 
+		// Clear cart items after placing order
+		if (env('APP_MODE' === 'production')) {
+			Log::info('(production env) Clearing cart items after placing order');
+			$cartItems->delete();
+		}
+
 		Log::debug("Order placed");
 		$order->save();
 		$order->order_items()->saveMany($orderItems);
